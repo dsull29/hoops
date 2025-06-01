@@ -9,7 +9,7 @@ import { GameOverScreen } from "./components/GameOverScreen";
 import { createInitialPlayer } from "./gameLogic/playerLogic";
 import { createDailyChoiceEvent } from "./gameLogic/eventDefinitions";
 import { processTurn } from "./gameLogic/gameLoop";
-import { GameState, Choice } from "./types";
+import type { GameState, Choice } from "./types";
 
 // --- FILE: src/App.tsx ---
 const App: React.FC = () => {
@@ -56,7 +56,7 @@ const App: React.FC = () => {
         const newLog = [...updatedPlayer.careerLog, outcomeMessage];
         message.success(outcomeMessage, 2);
 
-        let playerAfterChoiceAction = { ...updatedPlayer, careerLog: newLog };
+        const playerAfterChoiceAction = { ...updatedPlayer, careerLog: newLog };
 
         const turnResult = processTurn(
           playerAfterChoiceAction,

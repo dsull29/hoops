@@ -1,11 +1,6 @@
 // --- FILE: src/components/CareerLogDisplay.tsx ---
-import {
-  Card as LogCard,
-  List as LogList,
-  Typography as LogTypography,
-  Divider as LogDivider,
-} from "antd";
-const { Title: LogTitle, Text: LogText } = LogTypography;
+import { Card, Divider, List, Typography } from "antd";
+const { Title, Text } = Typography;
 
 interface CareerLogDisplayProps {
   logEntries: string[];
@@ -14,26 +9,26 @@ export const CareerLogDisplay: React.FC<CareerLogDisplayProps> = ({
   logEntries,
 }) => (
   <>
-    <LogDivider />
-    <LogCard
-      title={<LogTitle level={5}>Career Log</LogTitle>}
+    <Divider />
+    <Card
+      title={<Title level={5}>Career Log</Title>}
       style={{ maxHeight: 300, overflowY: "auto" }}
     >
-      <LogList
+      <List
         size="small"
         dataSource={logEntries.slice().reverse()}
         renderItem={(item) => (
-          <LogList.Item
+          <List.Item
             style={
               item.startsWith("---")
                 ? { fontWeight: "bold", color: "#faad14" }
                 : {}
             }
           >
-            <LogText>{item}</LogText>
-          </LogList.Item>
+            <Text>{item}</Text>
+          </List.Item>
         )}
       />
-    </LogCard>
+    </Card>
   </>
 );

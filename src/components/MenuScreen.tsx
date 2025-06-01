@@ -1,10 +1,6 @@
 // --- FILE: src/components/MenuScreen.tsx ---
-import {
-  Button as AntButton,
-  Statistic as AntStatistic,
-  Typography as AntTypographyComp,
-} from "antd";
-const { Title: MenuTitle, Paragraph: MenuParagraph } = AntTypographyComp;
+import { Button, Statistic, Typography } from "antd";
+const { Title, Paragraph } = Typography;
 
 interface MenuScreenProps {
   onStartGame: () => void;
@@ -15,27 +11,27 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({
   metaSkillPoints,
 }) => (
   <div style={{ textAlign: "center", padding: "50px 20px" }}>
-    <MenuTitle level={1} style={{ marginBottom: 16 }}>
+    <Title level={1} style={{ marginBottom: 16 }}>
       Roguelike Basketball Sim
-    </MenuTitle>
-    <MenuParagraph
+    </Title>
+    <Paragraph
       style={{ fontSize: "1.2em", maxWidth: 600, margin: "0 auto 24px auto" }}
     >
       Forge your legacy on the court. Every career is a new story. Each choice
       shapes your path from a rookie to a legend... or a bust.
-    </MenuParagraph>
-    <AntStatistic
+    </Paragraph>
+    <Statistic
       title="Current Legacy Points"
       value={metaSkillPoints}
       valueStyle={{ color: "#1890ff" }}
     />
-    <MenuParagraph
+    <Paragraph
       type="secondary"
       style={{ display: "block", margin: "8px auto 24px auto" }}
     >
       (Legacy points give your next player a small starting boost!)
-    </MenuParagraph>
-    <AntButton
+    </Paragraph>
+    <Button
       type="primary"
       size="large"
       onClick={onStartGame}
@@ -47,6 +43,6 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({
       }}
     >
       Start New Career
-    </AntButton>
+    </Button>
   </div>
 );

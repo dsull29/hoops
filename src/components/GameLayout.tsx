@@ -1,9 +1,9 @@
 // --- FILE: src/components/GameLayout.tsx ---
-import { Typography as AntTypography } from "antd"; // Alias to avoid conflict
+import { Layout, Typography } from "antd";
 import React from "react";
-import { Layout } from "antd";
+
 const { Header, Content, Footer } = Layout;
-const { Title: AntTitle } = AntTypography; // Alias
+const { Title } = Typography;
 
 interface GameLayoutProps {
   children: React.ReactNode;
@@ -13,12 +13,12 @@ export const GameLayout: React.FC<GameLayoutProps> = ({ children }) => (
     <Header
       style={{ display: "flex", alignItems: "center", padding: "0 24px" }}
     >
-      <AntTitle
+      <Title
         level={3}
         style={{ color: "white", margin: 0, lineHeight: "64px" }}
       >
         Roguelike Basketball Sim
-      </AntTitle>
+      </Title>
     </Header>
     <Content style={{ padding: "24px", background: "#f0f2f5" }}>
       <div

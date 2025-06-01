@@ -1,17 +1,9 @@
 // --- FILE: src/components/PlayerStatsDisplay.tsx ---
 import {
-  Card,
-  Statistic,
-  Progress,
-  Row,
-  Col,
-  Descriptions,
-  Tag,
-  Divider,
-  Typography,
+  Card, Col, Descriptions, Divider, Progress, Row, Statistic, Tag, Typography
 } from "antd";
 import { MAX_ENERGY, MAX_STAT_VALUE } from "../constants";
-import { Player, PlayerStats } from "../types";
+import type { Player, PlayerStats } from "../types";
 
 const { Title: PlayerTitle, Text: PlayerText } = Typography;
 
@@ -46,10 +38,10 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({
       <Descriptions.Item label="Traits" span={player.traits.length > 0 ? 3 : 1}>
         {player.traits.length > 0
           ? player.traits.map((trait) => (
-              <Tag key={trait} color="blue">
-                {trait}
-              </Tag>
-            ))
+            <Tag key={trait} color="blue">
+              {trait}
+            </Tag>
+          ))
           : "None"}
       </Descriptions.Item>
     </Descriptions>
@@ -82,15 +74,15 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({
                       (key === "energy" || key === "morale"
                         ? MAX_ENERGY
                         : MAX_STAT_VALUE)) *
-                      100
+                    100
                   )}
                   size="small"
                   status={
                     player.stats[key] < 30
                       ? "exception"
                       : player.stats[key] < 60
-                      ? "normal"
-                      : "success"
+                        ? "normal"
+                        : "success"
                   }
                 />
               )}

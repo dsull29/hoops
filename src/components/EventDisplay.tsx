@@ -5,6 +5,9 @@ import {
   Space as EventSpace,
   Typography as EventTypography,
 } from "antd";
+
+import type { Choice, GameEvent, Player } from "../types";
+
 const {
   Title: EventTitle,
   Text: EventText,

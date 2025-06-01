@@ -1,19 +1,15 @@
 // --- FILE: src/components/GameOverScreen.tsx ---
 import {
-  Button as OverButton,
-  Result,
-  Typography as OverTypography,
-  Descriptions as OverDescriptions,
-  Divider as OverDivider,
+  Button, Descriptions, Divider, Result, Typography
 } from "antd";
-import { Player, PlayerStats } from "../types";
+import type { Player, PlayerStats } from "../types";
 import { CareerLogDisplay } from "./CareerLogDisplay";
 
 const {
-  Title: OverTitle,
-  Paragraph: OverParagraph,
-  Text: OverText,
-} = OverTypography;
+  Title,
+  Paragraph,
+  Text,
+} = Typography;
 
 interface GameOverScreenProps {
   player: Player;
@@ -30,59 +26,59 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   return (
     <Result
       status="info"
-      title={<OverTitle level={2}>Career Over</OverTitle>}
+      title={<Title level={2}>Career Over</Title>}
       subTitle={
-        <OverParagraph strong>
+        <Paragraph strong>
           {player.careerLog
             .find((log) => log.startsWith("--- CAREER OVER:"))
             ?.replace("--- CAREER OVER: ", "")}
-        </OverParagraph>
+        </Paragraph>
       }
       extra={[
-        <OverButton
+        <Button
           type="primary"
           key="new_career"
           onClick={onStartGame}
           size="large"
         >
           Start New Career (Total Legacy: {player.stats.skillPoints} pts)
-        </OverButton>,
+        </Button>,
       ]}
     >
       <div
         className="desc"
         style={{ textAlign: "left", maxWidth: 600, margin: "0 auto" }}
       >
-        <OverTitle level={4} style={{ textAlign: "center" }}>
+        <Title level={4} style={{ textAlign: "center" }}>
           Final Summary for {player.name}
-        </OverTitle>
-        <OverDescriptions bordered column={1} size="small">
+        </Title>
+        <Descriptions bordered column={1} size="small">
           {(Object.keys(player.stats) as Array<keyof PlayerStats>).map(
             (key) => (
-              <OverDescriptions.Item
+              <Descriptions.Item
                 key={key}
                 label={
-                  <OverText strong className="capitalize">
+                  <Text strong className="capitalize">
                     {key.replace(/([A-Z])/g, " $1")}
-                  </OverText>
+                  </Text>
                 }
               >
                 {player.stats[key]}
-              </OverDescriptions.Item>
+              </Descriptions.Item>
             )
           )}
-          <OverDescriptions.Item
-            label={<OverText strong>Total Days Played</OverText>}
+          <Descriptions.Item
+            label={<Text strong>Total Days Played</Text>}
           >
             {player.totalDaysPlayed}
-          </OverDescriptions.Item>
-          <OverDescriptions.Item
-            label={<OverText strong>Legacy Points Earned (This Run)</OverText>}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={<Text strong>Legacy Points Earned (This Run)</Text>}
           >
             {pointsEarnedThisRun}
-          </OverDescriptions.Item>
-        </OverDescriptions>
-        <OverDivider>Career Log</OverDivider>
+          </Descriptions.Item>
+        </Descriptions>
+        <Divider>Career Log</Divider>
         <CareerLogDisplay logEntries={player.careerLog} />
       </div>
     </Result>
