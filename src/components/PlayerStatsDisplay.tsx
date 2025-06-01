@@ -1,94 +1,83 @@
 // --- FILE: src/components/PlayerStatsDisplay.tsx ---
 import {
-  Card, Col, Descriptions, Divider, Progress, Row, Statistic, Tag, Typography
+  Card,
+  Descriptions,
+  Table,
+  Tag, Typography
 } from "antd";
-import { MAX_ENERGY, MAX_STAT_VALUE } from "../constants";
-import type { Player, PlayerStats } from "../types";
+import type { ColumnsType } from 'antd/es/table';
+import React from "react";
+import type { Player } from "../types";
+
 
 const { Title: PlayerTitle, Text: PlayerText } = Typography;
 
 interface PlayerStatsDisplayProps {
   player: Player;
 }
-export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({
-  player,
-}) => (
-  <Card
-    title={
-      <PlayerTitle level={3}>
-        {player.name} - {player.position} ({player.age} y.o.)
-      </PlayerTitle>
-    }
-    style={{ marginBottom: 24 }}
-  >
-    <Descriptions
-      bordered
+
+interface StatDataItem {
+  key: string;
+  Shooting?: number | string;
+  Athleticism?: number | string;
+  'Basketball IQ'?: number | string;
+  Energy?: number | string;
+  Morale?: number | string;
+}
+
+export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }) => {
+  const { stats } = player;
+
+  const columns: ColumnsType<StatDataItem> = [
+    { title: 'Shooting', dataIndex: 'Shooting', key: 'Shooting', align: 'center' },
+    { title: 'Athleticism', dataIndex: 'Athleticism', key: 'Athleticism', align: 'center' },
+    { title: 'Basketball IQ', dataIndex: 'Basketball IQ', key: 'Basketball IQ', align: 'center' },
+    { title: 'Energy', dataIndex: 'Energy', key: 'Energy', align: 'center' },
+    { title: 'Morale', dataIndex: 'Morale', key: 'Morale', align: 'center' },
+  ];
+
+  const data: StatDataItem[] = [
+    {
+      key: 'values',
+      Shooting: stats.shooting,
+      Athleticism: stats.athleticism,
+      'Basketball IQ': stats.basketballIQ,
+      Energy: stats.energy,
+      Morale: stats.morale,
+    },
+  ];
+
+  return (
+    <Card
       size="small"
-      column={{ xxl: 3, xl: 2, lg: 2, md: 2, sm: 1, xs: 1 }}
+      title={<PlayerTitle level={5} style={{ margin: 0 }}>{player.name} - {player.position} ({player.age} y.o.)</PlayerTitle>}
+      style={{ marginBottom: 16 }}
     >
-      <Descriptions.Item label="Season">
-        {player.currentSeason}
-      </Descriptions.Item>
-      <Descriptions.Item label="Day">
-        {player.currentDayInSeason}
-      </Descriptions.Item>
-      <Descriptions.Item label="Total Days Played">
-        {player.totalDaysPlayed}
-      </Descriptions.Item>
-      <Descriptions.Item label="Traits" span={player.traits.length > 0 ? 3 : 1}>
-        {player.traits.length > 0
-          ? player.traits.map((trait) => (
-            <Tag key={trait} color="blue">
-              {trait}
-            </Tag>
-          ))
-          : "None"}
-      </Descriptions.Item>
-    </Descriptions>
-    <Divider>Stats</Divider>
-    <Row gutter={[16, 16]}>
-      {(Object.keys(player.stats) as Array<keyof PlayerStats>)
-        .filter((key) => key !== "skillPoints")
-        .map((key) => (
-          <Col key={key} xs={24} sm={12} md={8} lg={6}>
-            <Card
-              size="small"
-              title={
-                <PlayerText strong className="capitalize">
-                  {key.replace(/([A-Z])/g, " $1")}
-                </PlayerText>
-              }
-            >
-              <Statistic
-                value={player.stats[key]}
-                suffix={
-                  key === "energy" || key === "morale"
-                    ? `/ ${MAX_ENERGY}`
-                    : `/ ${MAX_STAT_VALUE}`
-                }
-              />
-              {(key === "energy" || key === "morale") && (
-                <Progress
-                  percent={Math.round(
-                    (player.stats[key] /
-                      (key === "energy" || key === "morale"
-                        ? MAX_ENERGY
-                        : MAX_STAT_VALUE)) *
-                    100
-                  )}
-                  size="small"
-                  status={
-                    player.stats[key] < 30
-                      ? "exception"
-                      : player.stats[key] < 60
-                        ? "normal"
-                        : "success"
-                  }
-                />
-              )}
-            </Card>
-          </Col>
-        ))}
-    </Row>
-  </Card>
-);
+      <Descriptions size="small" column={2} style={{ marginBottom: 12 }}>
+        <Descriptions.Item label="Mode"><Tag color="purple" style={{ marginRight: 0 }}>{player.gameMode}</Tag></Descriptions.Item>
+        <Descriptions.Item label="Role"><Tag color="blue" style={{ marginRight: 0 }}>{player.currentRole}</Tag></Descriptions.Item>
+        <Descriptions.Item label="Season">{player.currentSeasonInMode} ({player.currentSeason} career)</Descriptions.Item>
+        <Descriptions.Item label="Day">{player.currentDayInSeason} ({player.totalDaysPlayed} total)</Descriptions.Item>
+        {player.traits.length > 0 && (
+          <Descriptions.Item label="Traits" span={2}>
+            {player.traits.map(trait => <Tag key={trait} color="geekblue" style={{ marginRight: 3, marginBottom: 3 }}>{trait}</Tag>)}
+          </Descriptions.Item>
+        )}
+      </Descriptions>
+
+      <Table
+        columns={columns}
+        dataSource={data}
+        pagination={false}
+        size="small"
+        bordered
+        style={{ marginBottom: 8 }}
+        rowClassName={() => 'stats-table-row'} // For potential custom row styling
+      />
+      {/* You can add a small note about what the numbers mean if desired */}
+      {/* <PlayerText type="secondary" style={{fontSize: '0.75em', textAlign: 'center', display: 'block'}}>
+        Core attributes and current condition.
+      </PlayerText> */}
+    </Card>
+  );
+};

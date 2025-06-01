@@ -1,68 +1,186 @@
+/* src/index.css */
+
+/* --- Base & Typography --- */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  /* Define base font stack - Inter is a great modern choice, falls back to system UI */
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.6; /* Slightly more spacious line height for readability */
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  /*
+    Ant Design's ConfigProvider will handle the actual light/dark theme switching
+    for its components based on your React state.
+    These :root variables can serve as fallbacks or for non-AntD elements if you have any.
+    The color-scheme property helps the browser with default styling of UI elements like scrollbars.
+  */
+  color-scheme: light dark;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+/* Apply a smooth transition to color and background changes for theme switching */
+body,
+#root,
+.ant-layout {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
-a:hover {
-  color: #535bf2;
+
+/* Light Theme Defaults (AntD will override for its components) */
+:root:not([data-theme='dark']) {
+  --global-text-color: #2c3e50; /* A softer black */
+  --global-background-color: #f4f7f9; /* A very light, clean gray */
+  --global-link-color: #3498db;
+  --global-link-hover-color: #2980b9;
+}
+
+/* Dark Theme Defaults (AntD will override for its components) */
+:root[data-theme='dark'] {
+  --global-text-color: #ecf0f1; /* A light gray for dark mode text */
+  --global-background-color: #1f2937; /* A deep, cool dark blue-gray */
+  --global-link-color: #5dade2;
+  --global-link-hover-color: #85c1e9;
+}
+
+/* Apply the global variables */
+body {
+  color: var(--global-text-color);
+  background-color: var(--global-background-color);
+}
+
+/* --- Layout & Reset --- */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal scrollbars */
+  scroll-behavior: smooth; /* Smooth scrolling for anchor links or programmatic scrolls */
+}
+
+/* Ensure the main AntD Layout fills the root container properly */
+#root > .ant-layout {
+  min-height: 100%; /* Use min-height to ensure it can grow if content is short */
+}
+
+/* --- Links (Subtle enhancements, AntD will style its own links) --- */
+a {
+  color: var(--global-link-color);
+  text-decoration: none; /* Cleaner look, rely on color for affordance */
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+  color: var(--global-link-hover-color);
+  text-decoration: underline; /* Underline on hover for clarity */
+}
+
+/* --- Headings (Consistent sizing and some flair) --- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600; /* Slightly bolder headings */
+  line-height: 1.3;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2.8em;
+  letter-spacing: -0.02em;
+} /* Slightly reduced from 3.2em for balance */
+h2 {
+  font-size: 2.2em;
+  letter-spacing: -0.015em;
+}
+h3 {
+  font-size: 1.8em;
+  letter-spacing: -0.01em;
+}
+h4 {
+  font-size: 1.5em;
+}
+h5 {
+  font-size: 1.25em;
+}
+h6 {
+  font-size: 1.05em;
 }
 
+/* --- Custom Scrollbars (Optional - can make it look "dope") --- */
+/* Works in WebKit (Chrome, Safari, Edge) and Firefox (with different properties) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--global-background-color, #f1f1f1); /* Fallback if variable not set */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888; /* Neutral scrollbar color */
+  border-radius: 10px;
+  border: 2px solid var(--global-background-color, #f1f1f1); /* Creates padding around thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* For Firefox */
+/* You might need to enable this via about:config layout.css.scrollbar-colors.enabled if it doesn't work by default */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888 var(--global-background-color, #f1f1f1);
+}
+
+/* --- Removing/Overriding Vite's default button styles --- */
+/*
+  Ant Design provides its own comprehensive button styling.
+  It's generally better to remove generic global button styles
+  to avoid conflicts and ensure AntD buttons look as intended.
+  If you need custom non-AntD buttons, style them with specific classes.
+*/
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  /* Resetting most of the Vite default button styles */
+  border-radius: default; /* Let AntD handle this or use its variables */
+  border: default;
+  padding: default;
+  font-size: default;
+  font-weight: default;
+  font-family: inherit; /* Good to inherit from body */
+  background-color: default;
+  cursor: default;
+  transition: default;
+  outline: default;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/*
+  The :root color-scheme and @media (prefers-color-scheme: light) block
+  from your original CSS is useful for browser/OS integration, but AntD's
+  ConfigProvider will be the primary driver for your app's theme.
+  We can keep the color-scheme property for better OS integration of non-AntD elements.
+*/
+
+/* --- Global Focus Visible (Accessibility) --- */
+/*
+  Modern browsers are good at this, but you can add a more prominent
+  focus style if desired for accessibility. AntD components have their own focus styles.
+  This is a basic example if you want to enhance it for non-AntD focusable elements.
+*/
+*:focus-visible {
+  outline: 2px solid var(--global-link-color, #646cff);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(var(--global-link-color, #646cff), 0.2); /* Optional softer glow */
 }

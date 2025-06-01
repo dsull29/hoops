@@ -1,48 +1,94 @@
-  export interface PlayerStats {
-    shooting: number;
-    athleticism: number;
-    basketballIQ: number;
-    charisma: number;
-    professionalism: number;
-    energy: number;
-    morale: number;
-    skillPoints: number;
-  }
+export type GameMode = 'High School' | 'College' | 'Professional';
 
-  export interface Player {
-    name: string;
-    position: string;
-    stats: PlayerStats;
-    traits: string[];
-    currentSeason: number;
-    currentDayInSeason: number;
-    totalDaysPlayed: number;
-    careerOver: boolean;
-    careerLog: string[];
-    age: number;
-  }
+export type HighSchoolRole =
+  | 'Freshman Newcomer'
+  | 'Sophomore Contender'
+  | 'Junior Varsity Player'
+  | 'Varsity Rotation'
+  | 'Varsity Starter'
+  | 'Team Captain'
+  | 'District Star'
+  | 'All-State Contender'
+  | 'All-American Prospect';
 
-  export interface Choice {
-    id: string;
-    text: string;
-    description?: string;
-    action: (player: Player)
-    => { updatedPlayer: Player; outcomeMessage: string; immediateEvent?: GameEvent | null };
-    cost?: { stat: keyof PlayerStats; amount: number };
-    disabled?: (player: Player) => boolean;
-  }
+export type CollegeRole =
+  | 'Walk-On Hopeful'
+  | 'Practice Squad Player'
+  | 'Bench Warmer'
+  | 'End of Bench Specialist'
+  | 'Rotation Player'
+  | 'Key Substitute (6th Man)'
+  | 'Starter'
+  | 'Conference Star'
+  | 'All-American Candidate'
+  | 'Top Draft Prospect';
 
-  export interface GameEvent {
-    id: string;
-    title: string;
-    description: string;
-    choices: Choice[];
-    isMandatory?: boolean;
-  }
+export type ProfessionalRole =
+  | 'Undrafted Free Agent'
+  | 'G-League Assignee'
+  | 'Two-Way Contract Player'
+  | 'End of Bench Pro'
+  | 'Rotation Contributor'
+  | 'Valuable Sixth Man'
+  | 'Starting Caliber Player'
+  | 'Established Star'
+  | 'All-Star Level Player'
+  | 'All-League Performer'
+  | 'MVP Candidate';
 
-  export interface GameState {
-    player: Player | null;
-    currentEvent: GameEvent | null;
-    isLoading: boolean;
-    gamePhase: 'menu' | 'playing' | 'gameOver';
-  }
+export type PlayerRole = HighSchoolRole | CollegeRole | ProfessionalRole;
+
+export interface PlayerStats {
+  shooting: number;
+  athleticism: number;
+  basketballIQ: number;
+  charisma: number;
+  professionalism: number;
+  energy: number;
+  morale: number;
+  skillPoints: number;
+}
+
+export interface Player {
+  name: string;
+  position: string;
+  age: number;
+  gameMode: GameMode;
+  currentRole: PlayerRole;
+  stats: PlayerStats;
+  traits: string[];
+  currentSeason: number; // Overall career season
+  currentSeasonInMode: number; // Seasons played in current mode
+  currentDayInSeason: number;
+  totalDaysPlayed: number;
+  careerOver: boolean;
+  careerLog: string[];
+}
+
+export interface Choice {
+  id: string;
+  text: string;
+  description?: string;
+  action: (player: Player) => {
+    updatedPlayer: Player;
+    outcomeMessage: string;
+    immediateEvent?: GameEvent | null;
+  };
+  cost?: { stat: keyof PlayerStats; amount: number };
+  disabled?: (player: Player) => boolean;
+}
+
+export interface GameEvent {
+  id: string;
+  title: string;
+  description: string;
+  choices: Choice[];
+  isMandatory?: boolean;
+}
+
+export interface GameState {
+  player: Player | null;
+  currentEvent: GameEvent | null;
+  isLoading: boolean;
+  gamePhase: 'menu' | 'playing' | 'gameOver';
+}
