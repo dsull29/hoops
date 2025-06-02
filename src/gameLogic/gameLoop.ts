@@ -182,7 +182,7 @@ export const processTurn = (
         (eventTriggerMessage ? eventTriggerMessage + ' & ' : '') + 'Minor Injury!';
     } else if (
       nextPlayerState.totalDaysPlayed > 0 &&
-      nextPlayerState.totalDaysPlayed % 7 === 0 &&
+      nextPlayerState.totalDaysPlayed % 4 === 0 &&
       !nextEvent
     ) {
       nextEvent = gameDayEvent(nextPlayerState);

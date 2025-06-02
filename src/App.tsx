@@ -22,14 +22,14 @@ const App: React.FC = () => {
     metaSkillPointsAtRunStart, setMetaSkillPointsAtRunStart,
     isDarkMode, setIsDarkMode,
     hasLoadedInitialState,
-    saveGameToStorage,
+    saveGameToStorage, // Will be used for autosave
     loadGameFromStorage,
     clearSavedGameFromStorage
   } = useGamePersistence();
 
 
   const startGame = useCallback(() => {
-    setMetaSkillPointsAtRunStart(metaSkillPoints); // Store current meta points for this new run
+    setMetaSkillPointsAtRunStart(metaSkillPoints);
     const newPlayer = createInitialPlayer(metaSkillPoints);
     const initialGameState: GameState = {
       player: newPlayer,
@@ -38,19 +38,19 @@ const App: React.FC = () => {
       gamePhase: 'playing',
     };
     setGameState(initialGameState);
-  }, [metaSkillPoints, setGameState, setMetaSkillPointsAtRunStart]);
+    // Autosave the very first state of the new game
+    saveGameToStorage(initialGameState, metaSkillPoints, true); // true for silent save
+  }, [metaSkillPoints, setGameState, setMetaSkillPointsAtRunStart, saveGameToStorage]);
 
   const handleLoadGame = useCallback(() => {
     const loadedState = loadGameFromStorage();
     if (loadedState) {
       setGameState(loadedState);
-      // metaSkillPointsAtRunStart is set within loadGameFromStorage via setMetaSkillPointsAtRunStart
     }
   }, [loadGameFromStorage, setGameState]);
 
   const handleClearSavedGame = useCallback(() => {
     clearSavedGameFromStorage();
-    // Optionally reset game to menu if not already there
     if (gameState.gamePhase !== 'menu') {
       setGameState({ player: null, currentEvent: null, isLoading: false, gamePhase: 'menu' });
     }
@@ -88,7 +88,7 @@ const App: React.FC = () => {
           }
         };
         setGameState({ player: finalPlayerState, currentEvent: null, isLoading: false, gamePhase: 'gameOver' });
-        localStorage.removeItem('roguelikeBasketballGameState_v1.2'); // Use constant from hook if exported, or pass clear func
+        localStorage.removeItem(LOCAL_STORAGE_KEY_GAME_STATE);
         message.info("You have retired. Your legacy awaits!");
       }
     });
@@ -111,10 +111,13 @@ const App: React.FC = () => {
     setGameState(prev => ({ ...prev, isLoading: true }));
 
     setTimeout(() => {
+      let nextGameState: GameState | null = null;
       try {
         const { updatedPlayer, outcomeMessage, immediateEvent } = choice.action(gameState.player!);
-        const newLog = [...updatedPlayer.careerLog, outcomeMessage];
-        message.success(outcomeMessage, 2);
+        const newLogEntry = outcomeMessage;
+        const newLog = [...updatedPlayer.careerLog, newLogEntry];
+
+        message.success(newLogEntry, 2.5);
 
         const playerAfterChoiceAction = { ...updatedPlayer, careerLog: newLog };
         const turnResult = processTurn(playerAfterChoiceAction, immediateEvent ?? null);
@@ -122,7 +125,7 @@ const App: React.FC = () => {
         if (turnResult.eventTriggerMessage) {
           const messages = turnResult.eventTriggerMessage.split('---').map(s => s.trim()).filter(s => s.length > 0);
           messages.forEach((msg, index) => {
-            setTimeout(() => message.info(msg, 4), index * 500);
+            setTimeout(() => message.info(msg, 3.5), index * 600);
           });
         }
 
@@ -142,18 +145,25 @@ const App: React.FC = () => {
               skillPoints: newTotalMetaSkillPoints
             }
           };
-          setGameState({ player: finalPlayerState, currentEvent: null, isLoading: false, gamePhase: 'gameOver' });
-          localStorage.removeItem('roguelikeBasketballGameState_v1'); // Use constant or clear func
+          nextGameState = { player: finalPlayerState, currentEvent: null, isLoading: false, gamePhase: 'gameOver' };
+          localStorage.removeItem(LOCAL_STORAGE_KEY_GAME_STATE);
         } else {
-          setGameState({ player: turnResult.nextPlayerState, currentEvent: turnResult.nextEvent, isLoading: false, gamePhase: 'playing' });
+          nextGameState = { player: turnResult.nextPlayerState, currentEvent: turnResult.nextEvent, isLoading: false, gamePhase: 'playing' };
         }
+        setGameState(nextGameState); // Update the state
+
+        // AUTOSAVE: Save after the state has been successfully updated
+        if (nextGameState && nextGameState.gamePhase === 'playing' && nextGameState.player) {
+          saveGameToStorage(nextGameState, metaSkillPointsAtRunStart, true);
+        }
+
       } catch (error) {
         console.error("Error during choice action processing:", error);
         message.error("A critical error occurred. Please reload the game.");
         setGameState(prev => ({ ...prev, isLoading: false, gamePhase: 'menu', player: null, currentEvent: null }));
       }
     }, 300);
-  }, [gameState.player, gameState.isLoading, metaSkillPointsAtRunStart, setGameState, setMetaSkillPoints]);
+  }, [gameState.player, gameState.isLoading, metaSkillPointsAtRunStart, setGameState, setMetaSkillPoints, saveGameToStorage]);
 
   const handleThemeChange = (checked: boolean) => {
     setIsDarkMode(checked);
@@ -176,7 +186,7 @@ const App: React.FC = () => {
 
   return (
     <ConfigProvider theme={antdThemeConfig}>
-      {gameState.isLoading && ( // This spinner is for turn processing
+      {gameState.isLoading && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spin size="large" tip="Processing..." />
         </div>
@@ -195,7 +205,6 @@ const App: React.FC = () => {
         {gameState.gamePhase === 'playing' && gameState.player && gameState.currentEvent && (
           <>
             <Space style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button size="small" onClick={() => saveGameToStorage(gameState, metaSkillPointsAtRunStart)} style={{ marginRight: 8 }}>Save Game</Button>
               <Button size="small" danger onClick={handleRetire}>Retire Career</Button>
             </Space>
             <PlayerStatsDisplay player={gameState.player} />

@@ -1,12 +1,13 @@
 import { message } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { createDailyChoiceEvent } from '../gameLogic/eventDefinitions';
+import type { GameState, Player } from '../types';
+
 import {
   LOCAL_STORAGE_KEY_GAME_STATE,
   LOCAL_STORAGE_KEY_META_POINTS,
   LOCAL_STORAGE_KEY_THEME,
 } from '../constants';
-import { createDailyChoiceEvent } from '../gameLogic/eventDefinitions';
-import type { GameState, Player } from '../types';
 
 interface UseGamePersistenceReturn {
   gameState: GameState;
@@ -18,11 +19,14 @@ interface UseGamePersistenceReturn {
   isDarkMode: boolean;
   setIsDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
   hasLoadedInitialState: boolean;
-  saveGameToStorage: (currentGameState: GameState, currentMetaStartPoints: number) => void;
+  saveGameToStorage: (
+    currentGameState: GameState,
+    currentMetaStartPoints: number,
+    silent?: boolean
+  ) => void;
   loadGameFromStorage: () => GameState | null;
   clearSavedGameFromStorage: () => void;
 }
-
 export const useGamePersistence = (): UseGamePersistenceReturn => {
   const [gameState, setGameState] = useState<GameState>({
     player: null,
@@ -40,19 +44,13 @@ export const useGamePersistence = (): UseGamePersistenceReturn => {
     return storedTheme === 'dark';
   });
   const [hasLoadedInitialState, setHasLoadedInitialState] = useState(false);
-
-  // Effect for saving metaSkillPoints
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY_META_POINTS, metaSkillPoints.toString());
   }, [metaSkillPoints]);
-
-  // Effect for saving theme
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY_THEME, isDarkMode ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
-
-  // Effect for loading initial game state (once on mount)
   useEffect(() => {
     const storedState = localStorage.getItem(LOCAL_STORAGE_KEY_GAME_STATE);
     if (storedState) {
@@ -62,7 +60,7 @@ export const useGamePersistence = (): UseGamePersistenceReturn => {
           player: Player;
         };
         if (parsedSaveData.player && parsedSaveData.gamePhase) {
-          const regeneratedEvent = createDailyChoiceEvent(parsedSaveData.player); // Regenerate event
+          const regeneratedEvent = createDailyChoiceEvent(parsedSaveData.player);
           setGameState({
             player: parsedSaveData.player,
             currentEvent: regeneratedEvent,
@@ -79,10 +77,9 @@ export const useGamePersistence = (): UseGamePersistenceReturn => {
       }
     }
     setHasLoadedInitialState(true);
-  }, [metaSkillPoints]); // Include metaSkillPoints for the fallback logic in setMetaSkillPointsAtRunStart
-
+  }, [metaSkillPoints]);
   const saveGameToStorage = useCallback(
-    (currentGameState: GameState, currentMetaStartPoints: number) => {
+    (currentGameState: GameState, currentMetaStartPoints: number, silent: boolean = false) => {
       if (currentGameState.player && currentGameState.gamePhase === 'playing') {
         const stateToSave = {
           player: currentGameState.player,
@@ -91,14 +88,15 @@ export const useGamePersistence = (): UseGamePersistenceReturn => {
           metaSkillPointsAtRunStart: currentMetaStartPoints,
         };
         localStorage.setItem(LOCAL_STORAGE_KEY_GAME_STATE, JSON.stringify(stateToSave));
-        message.success('Game saved!');
-      } else if (currentGameState.gamePhase !== 'menu') {
+        if (!silent) {
+          message.success('Game saved!');
+        }
+      } else if (currentGameState.gamePhase !== 'menu' && !silent) {
         message.warning('No active game to save.');
       }
     },
     []
   );
-
   const loadGameFromStorage = useCallback((): GameState | null => {
     const storedState = localStorage.getItem(LOCAL_STORAGE_KEY_GAME_STATE);
     if (storedState) {
@@ -130,12 +128,10 @@ export const useGamePersistence = (): UseGamePersistenceReturn => {
     }
     return null;
   }, [metaSkillPoints]);
-
   const clearSavedGameFromStorage = useCallback(() => {
     localStorage.removeItem(LOCAL_STORAGE_KEY_GAME_STATE);
     message.info('Saved game cleared.');
   }, []);
-
   return {
     gameState,
     setGameState,
