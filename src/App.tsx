@@ -8,6 +8,7 @@ import { GameLayout } from "./components/GameLayout";
 import { GameOverScreen } from "./components/GameOverScreen";
 import { MenuScreen } from "./components/MenuScreen";
 import { PlayerStatsDisplay } from "./components/PlayerStatsDisplay";
+import { LOCAL_STORAGE_KEY_GAME_STATE } from './constants';
 import { createDailyChoiceEvent } from "./gameLogic/eventDefinitions";
 import { processTurn } from "./gameLogic/gameLoop";
 import { createInitialPlayer } from "./gameLogic/playerLogic";
@@ -185,7 +186,7 @@ const App: React.FC = () => {
           <MenuScreen
             onStartGame={startGame}
             metaSkillPoints={metaSkillPoints}
-            hasSavedGame={!!localStorage.getItem('roguelikeBasketballGameState_v1.2')} // Use constant
+            hasSavedGame={!!localStorage.getItem(LOCAL_STORAGE_KEY_GAME_STATE)}
             onLoadGame={handleLoadGame}
             onClearSavedGame={handleClearSavedGame}
           />

@@ -6,6 +6,10 @@ export const MAX_ENERGY = 100;
 export const MAX_MORALE = 100;
 export const DAYS_PER_SEASON = 20;
 
+export const LOCAL_STORAGE_KEY_GAME_STATE = 'HoopsGameState_v1';
+export const LOCAL_STORAGE_KEY_META_POINTS = 'HoopsMetaPoints_v1';
+export const LOCAL_STORAGE_KEY_THEME = 'HoopsTheme_v1';
+
 export const HIGH_SCHOOL_ROLES: HighSchoolRole[] = [
   'Freshman Newcomer',
   'Sophomore Contender',

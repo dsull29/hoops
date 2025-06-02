@@ -1,11 +1,12 @@
 import { message } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+  LOCAL_STORAGE_KEY_GAME_STATE,
+  LOCAL_STORAGE_KEY_META_POINTS,
+  LOCAL_STORAGE_KEY_THEME,
+} from '../constants';
 import { createDailyChoiceEvent } from '../gameLogic/eventDefinitions';
 import type { GameState, Player } from '../types';
-
-const LOCAL_STORAGE_KEY_GAME_STATE = 'roguelikeBasketballGameState_v1.2';
-const LOCAL_STORAGE_KEY_META_POINTS = 'roguelikeBasketballMetaPoints_v1';
-const LOCAL_STORAGE_KEY_THEME = 'roguelikeBasketballTheme_v1';
 
 interface UseGamePersistenceReturn {
   gameState: GameState;
