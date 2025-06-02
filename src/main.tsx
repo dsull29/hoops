@@ -1,9 +1,9 @@
 // src/main.tsx
+import 'antd/dist/reset.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App'; // Assuming your main App component is App.tsx
-import 'antd/dist/reset.css'; // Import AntD styles
-import './index.css'; // Or your global stylesheet
+import App from './App';
+import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
