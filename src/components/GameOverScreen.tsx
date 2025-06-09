@@ -1,5 +1,6 @@
-// --- FILE: src/components/GameOverScreen.tsx ---
+// src/components/GameOverScreen.tsx
 import { Button, Descriptions, Divider, Result, Tag, Typography } from 'antd';
+import { useGameStore } from '../store/gameStore';
 import type { Player, PlayerStats } from '../types';
 import { CareerLogDisplay } from './CareerLogDisplay';
 
@@ -7,15 +8,12 @@ const { Title: OverTitle, Paragraph: OverParagraph, Text: OverText } = Typograph
 
 interface GameOverScreenProps {
   player: Player;
-  onStartGame: () => void;
-  metaSkillPointsBeforeThisRun: number;
 }
-export const GameOverScreen: React.FC<GameOverScreenProps> = ({
-  player,
-  onStartGame,
-  metaSkillPointsBeforeThisRun,
-}) => {
-  const pointsEarnedThisRun = player.stats.skillPoints - metaSkillPointsBeforeThisRun;
+
+export const GameOverScreen: React.FC<GameOverScreenProps> = ({ player }) => {
+  const { startGame, metaSkillPointsAtRunStart } = useGameStore();
+  const pointsEarnedThisRun = player.stats.skillPoints - metaSkillPointsAtRunStart;
+
   return (
     <Result
       status='info'
@@ -28,7 +26,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         </OverParagraph>
       }
       extra={[
-        <Button type='primary' key='new_career' onClick={onStartGame} size='large'>
+        <Button type='primary' key='new_career' onClick={startGame} size='large'>
           Start New Career (Total Legacy: {player.stats.skillPoints} pts)
         </Button>,
       ]}
@@ -48,7 +46,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             <Descriptions.Item
               key={key}
               label={
-                <OverText strong className='capitalize'>
+                <OverText strong style={{ textTransform: 'capitalize' }}>
                   {key.replace(/([A-Z])/g, ' $1')}
                 </OverText>
               }
