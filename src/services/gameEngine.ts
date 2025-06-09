@@ -1,9 +1,8 @@
-// src/services/gameEngine.ts
 import {
-  createDailyChoiceEvent,
   createInitialPlayer,
+  createWeeklyChoiceEvent,
   processPlayerRetirement as logicProcessPlayerRetirement,
-  processTurn,
+  processWeek,
 } from '../gameLogic';
 import type { Choice, GameEvent, GameState, Player } from '../types';
 
@@ -17,7 +16,7 @@ export const gameEngine = {
     const player = createInitialPlayer(metaSkillPoints);
     return {
       player,
-      currentEvent: createDailyChoiceEvent(player),
+      currentEvent: createWeeklyChoiceEvent(player), // FIX: Use the new weekly event creator
       isLoading: false,
     };
   },
@@ -57,7 +56,8 @@ export const gameEngine = {
     const newLog = [...updatedPlayer.careerLog, newLogEntry];
     const playerAfterChoiceAction = { ...updatedPlayer, careerLog: newLog };
 
-    const turnResult = processTurn(playerAfterChoiceAction, immediateEvent ?? null);
+    // FIX: Call processWeek instead of processTurn
+    const turnResult = processWeek(playerAfterChoiceAction, immediateEvent ?? null);
 
     return {
       nextPlayerState: turnResult.nextPlayerState,
@@ -84,12 +84,13 @@ export const gameEngine = {
   },
 
   /**
-   * Regenerates a daily choice event for a player.
-   * This is useful when loading a game from storage, as events with functions can't be serialized.
+   * Regenerates a weekly choice event for a player.
+   * This is useful when loading a game from storage.
    * @param player - The player for whom to generate the event.
    * @returns A new GameEvent.
    */
-  regenerateDailyEvent(player: Player): GameEvent {
-    return createDailyChoiceEvent(player);
+  regenerateWeeklyEvent(player: Player): GameEvent {
+    // FIX: Renamed from regenerateDailyEvent
+    return createWeeklyChoiceEvent(player);
   },
 };

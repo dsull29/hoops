@@ -1,6 +1,7 @@
 import {
   App as AntdApp,
   Modal as AntdModal,
+  Button,
   ConfigProvider,
   Spin,
   message as antdMessageApi,
@@ -9,33 +10,24 @@ import {
 import type { ThemeConfig } from 'antd/es/config-provider';
 import React, { useEffect } from 'react';
 
-// Component Imports
+import { CalendarDisplay } from './components/CalendarDisplay';
 import { CareerLogDisplay } from './components/CareerLogDisplay';
 import { EventDisplay } from './components/EventDisplay';
 import { GameLayout } from './components/GameLayout';
 import { GameOverScreen } from './components/GameOverScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
-
-// Store Imports
-import { Button } from 'antd';
 import { useGameStore } from './store/gameStore';
-import { useUIStore } from './store/uiStore'; // Import the new UI store
+import { useUIStore } from './store/uiStore';
 
 const AppContent: React.FC = () => {
-  // State from Game Store
   const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire } = useGameStore();
-  // State from UI Store
   const { isDarkMode, hasLoadedInitialState, setDarkMode, setHasLoaded } = useUIStore();
-
   const [modal, contextHolderModal] = AntdModal.useModal();
 
-  // This effect runs once on mount to initialize everything from localStorage
   useEffect(() => {
     const storedTheme = localStorage.getItem('HoopsTheme_v1');
     setDarkMode(storedTheme === 'dark');
-    // The game state is rehydrated automatically by the persist middleware.
-    // We just need to signal that the initial setup is complete.
     setHasLoaded(true);
   }, [setDarkMode, setHasLoaded]);
 
@@ -46,10 +38,8 @@ const AppContent: React.FC = () => {
       okText: 'Retire',
       cancelText: 'Cancel',
       onOk: () => {
-        const { retired, message } = handleRetire();
-        if (retired) {
-          antdMessageApi.info(message);
-        }
+        handleRetire();
+        antdMessageApi.info('You have retired. Your legacy awaits!');
       },
     });
   };
@@ -65,7 +55,9 @@ const AppContent: React.FC = () => {
           width: '100vw',
         }}
       >
-        <Spin size='large' tip='Loading Game...' />
+        <div>
+          <Spin size='large' tip='Loading Game...' />
+        </div>
       </div>
     );
   }
@@ -88,12 +80,13 @@ const AppContent: React.FC = () => {
             justifyContent: 'center',
           }}
         >
-          <Spin size='large' tip='Processing...' />
+          <div>
+            <Spin size='large' tip='Processing...' />
+          </div>
         </div>
       )}
       <GameLayout isDarkMode={isDarkMode} onThemeChange={setDarkMode}>
         {gamePhase === 'menu' && <MenuScreen />}
-
         {gamePhase === 'playing' && player && currentEvent && (
           <>
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
@@ -102,6 +95,7 @@ const AppContent: React.FC = () => {
               </Button>
             </div>
             <PlayerStatsDisplay player={player} />
+            <CalendarDisplay player={player} />
             <EventDisplay
               event={currentEvent}
               player={player}
@@ -111,17 +105,14 @@ const AppContent: React.FC = () => {
             <CareerLogDisplay logEntries={player.careerLog} />
           </>
         )}
-
         {gamePhase === 'gameOver' && player && <GameOverScreen player={player} />}
       </GameLayout>
     </>
   );
 };
 
-// The main App component now gets its theme state from the UI store
 const App: React.FC = () => {
   const isDarkMode = useUIStore((state) => state.isDarkMode);
-
   const antdThemeConfig: ThemeConfig = {
     algorithm: isDarkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {

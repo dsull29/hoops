@@ -2,9 +2,12 @@ import { MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import { HIGH_SCHOOL_ROLES } from '../constants/index';
 import type { Player } from '../types';
 import { clamp, getRandomName, getRandomPosition } from '../utils/index';
+import { generateSeasonSchedule } from './seasonLogic';
 
 export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
   const baseStat = 25 + Math.floor(metaSkillPoints / 2);
+  const initialSchedule = generateSeasonSchedule('High School', 1);
+
   return {
     name: getRandomName(),
     position: getRandomPosition(),
@@ -36,8 +39,9 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
     traits: [],
     currentSeason: 1,
     currentSeasonInMode: 1,
-    currentDayInSeason: 1,
-    totalDaysPlayed: 0,
+    currentWeek: 1,
+    totalWeeksPlayed: 0,
+    schedule: initialSchedule,
     careerOver: false,
     careerLog: ['Your High School career begins as a Freshman Newcomer!'],
   };
@@ -51,7 +55,7 @@ interface RetirementProcessingResult {
 export const processPlayerRetirement = (
   currentPlayer: Player,
   metaSkillPointsAtRunStart: number,
-  retirementMessage: string = '--- CAREER OVER: You decided to retire voluntarily. ---' // Default message
+  retirementMessage: string = '--- CAREER OVER: You decided to retire voluntarily. ---'
 ): RetirementProcessingResult => {
   const updatedPlayer = {
     ...currentPlayer,
@@ -60,7 +64,7 @@ export const processPlayerRetirement = (
   };
 
   const pointsEarned =
-    Math.floor(updatedPlayer.totalDaysPlayed / 10) +
+    Math.floor(updatedPlayer.totalWeeksPlayed * 2.5) + // Points per week now
     updatedPlayer.stats.shooting +
     updatedPlayer.stats.athleticism;
   const newTotalMetaSkillPoints = metaSkillPointsAtRunStart + pointsEarned;
@@ -69,7 +73,7 @@ export const processPlayerRetirement = (
     ...updatedPlayer,
     stats: {
       ...updatedPlayer.stats,
-      skillPoints: newTotalMetaSkillPoints, // Store the new total on the player for game over screen
+      skillPoints: newTotalMetaSkillPoints,
     },
   };
 

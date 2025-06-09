@@ -1,4 +1,3 @@
-// --- FILE: src/components/PlayerStatsDisplay.tsx ---
 import { Card, Descriptions, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
@@ -65,8 +64,8 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
         <Descriptions.Item label='Season'>
           {player.currentSeasonInMode} ({player.currentSeason} career)
         </Descriptions.Item>
-        <Descriptions.Item label='Day'>
-          {player.currentDayInSeason} ({player.totalDaysPlayed} total)
+        <Descriptions.Item label='Week'>
+          {player.currentWeek} ({player.totalWeeksPlayed} total)
         </Descriptions.Item>
         {player.traits.length > 0 && (
           <Descriptions.Item label='Traits' span={2}>
@@ -86,12 +85,8 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
         size='small'
         bordered
         style={{ marginBottom: 8 }}
-        rowClassName={() => 'stats-table-row'} // For potential custom row styling
+        rowClassName={() => 'stats-table-row'}
       />
-      {/* You can add a small note about what the numbers mean if desired */}
-      {/* <PlayerText type="secondary" style={{fontSize: '0.75em', textAlign: 'center', display: 'block'}}>
-        Core attributes and current condition.
-      </PlayerText> */}
     </Card>
   );
 };

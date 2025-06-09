@@ -45,6 +45,34 @@ export interface PlayerStats {
   skillPoints: number;
 }
 
+// --- NEW: Season Structure Types ---
+export type ScheduleItemType =
+  | 'Pre-Season Game'
+  | 'Regular Season Game'
+  | 'Playoff Game'
+  | 'Championship'
+  | 'Training'
+  | 'Rest';
+
+export interface ScheduleItem {
+  week: number;
+  type: ScheduleItemType;
+  opponent?: string; // e.g., "Rival High School"
+  gameResult?: {
+    playerStats: GameStatLine;
+    teamWon: boolean;
+  };
+}
+
+export interface SeasonSchedule {
+  year: number;
+  gameMode: GameMode;
+  schedule: ScheduleItem[];
+  wins: number;
+  losses: number;
+}
+// --- END NEW ---
+
 export interface Player {
   name: string;
   position: string;
@@ -55,10 +83,12 @@ export interface Player {
   traits: string[];
   currentSeason: number;
   currentSeasonInMode: number;
-  currentDayInSeason: number;
-  totalDaysPlayed: number;
   careerOver: boolean;
   careerLog: string[];
+  // --- UPDATED: Switched from daily to weekly progression ---
+  currentWeek: number; // Replaces currentDayInSeason
+  totalWeeksPlayed: number; // Replaces totalDaysPlayed
+  schedule: SeasonSchedule; // Player now holds their current schedule
 }
 
 export interface GameStatLine {
@@ -88,7 +118,7 @@ export interface GameEvent {
   description: string;
   choices: Choice[];
   isMandatory?: boolean;
-  type?: 'daily' | 'gameDay' | 'injury' | 'agent' | 'contextual';
+  type?: 'daily' | 'gameDay' | 'injury' | 'agent' | 'contextual' | 'weekly';
 }
 
 export interface GameState {
