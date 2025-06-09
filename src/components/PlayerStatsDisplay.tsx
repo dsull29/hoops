@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import type { Player } from '../types';
 
-const { Title: PlayerTitle } = Typography;
+const { Title: PlayerTitle, Text } = Typography;
 
 interface PlayerStatsDisplayProps {
   player: Player;
@@ -19,7 +19,7 @@ interface StatDataItem {
 }
 
 export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }) => {
-  const { stats } = player;
+  const { stats, schedule } = player;
 
   const columns: ColumnsType<StatDataItem> = [
     { title: 'Shooting', dataIndex: 'Shooting', key: 'Shooting', align: 'center' },
@@ -50,7 +50,7 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
       }
       style={{ marginBottom: 16 }}
     >
-      <Descriptions size='small' column={2} style={{ marginBottom: 12 }}>
+      <Descriptions size='small' column={3} style={{ marginBottom: 12 }}>
         <Descriptions.Item label='Mode'>
           <Tag color='purple' style={{ marginRight: 0 }}>
             {player.gameMode}
@@ -61,14 +61,19 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
             {player.currentRole}
           </Tag>
         </Descriptions.Item>
+        {/* FIX: Add Season Record */}
+        <Descriptions.Item label='Record'>
+          <Text strong style={{ color: '#52c41a' }}>{schedule.wins}</Text> -
+          <Text strong style={{ color: '#f5222d' }}>{schedule.losses}</Text>
+        </Descriptions.Item>
         <Descriptions.Item label='Season'>
           {player.currentSeasonInMode} ({player.currentSeason} career)
         </Descriptions.Item>
-        <Descriptions.Item label='Week'>
+        <Descriptions.Item label='Week' span={2}>
           {player.currentWeek} ({player.totalWeeksPlayed} total)
         </Descriptions.Item>
         {player.traits.length > 0 && (
-          <Descriptions.Item label='Traits' span={2}>
+          <Descriptions.Item label='Traits' span={3}>
             {player.traits.map((trait) => (
               <Tag key={trait} color='geekblue' style={{ marginRight: 3, marginBottom: 3 }}>
                 {trait}

@@ -8,7 +8,6 @@ interface CalendarDisplayProps {
   player: Player;
 }
 
-// Helper to determine the color of a schedule item tag
 const getTagColor = (type: ScheduleItem['type']) => {
   if (type.includes('Game')) return 'volcano';
   if (type.includes('Playoff')) return 'red';
@@ -16,13 +15,8 @@ const getTagColor = (type: ScheduleItem['type']) => {
   return 'default';
 };
 
-/**
- * A component to display the player's seasonal schedule in a calendar-like format.
- */
 export const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ player }) => {
   const { schedule, currentWeek } = player;
-
-  // Create a pseudo-date for display purposes. The year doesn't matter, only the week.
   const seasonStartDate = startOfYear(new Date(2024, 0, 1));
 
   return (
@@ -40,9 +34,22 @@ export const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ player }) => {
         {schedule.schedule.map((item, index) => {
           const weekNumber = index + 1;
           const isCurrentWeek = weekNumber === currentWeek;
-
-          // Calculate a display date for this week
           const weekStartDate = addDays(seasonStartDate, weekNumber * 7);
+
+          // --- FIX: Render game result if it exists ---
+          const renderGameResult = () => {
+            if (!item.gameResult) return null;
+            const { teamWon } = item.gameResult;
+            return (
+              <Tag
+                color={teamWon ? 'success' : 'error'}
+                style={{ marginTop: '8px', fontWeight: 'bold' }}
+              >
+                {teamWon ? 'W' : 'L'}
+              </Tag>
+            );
+          };
+          // --- End of FIX ---
 
           return (
             <Badge.Ribbon
@@ -56,12 +63,20 @@ export const CalendarDisplay: React.FC<CalendarDisplayProps> = ({ player }) => {
                 style={{
                   border: isCurrentWeek ? '1px solid #1677ff' : '',
                   boxShadow: isCurrentWeek ? '0 0 5px rgba(22, 119, 255, 0.5)' : 'none',
+                  backgroundColor: item.gameResult
+                    ? item.gameResult.teamWon
+                      ? 'rgba(82, 196, 26, 0.1)'
+                      : 'rgba(245, 34, 45, 0.1)'
+                    : 'inherit',
                 }}
               >
                 <Text type='secondary' style={{ display: 'block', marginBottom: '8px' }}>
                   {format(weekStartDate, 'MMM do')}
                 </Text>
-                <Tag color={getTagColor(item.type)}>{item.type}</Tag>
+                <div>
+                  <Tag color={getTagColor(item.type)}>{item.type}</Tag>
+                  {renderGameResult()}
+                </div>
               </Card>
             </Badge.Ribbon>
           );

@@ -4,29 +4,18 @@ import {
   processPlayerRetirement as logicProcessPlayerRetirement,
   processWeek,
 } from '../gameLogic';
-import type { Choice, GameEvent, GameState, Player } from '../types';
+import type { Choice, GameEvent, Player } from '../types';
 
 export const gameEngine = {
-  /**
-   * Starts a new game.
-   * @param metaSkillPoints - The legacy points to start with.
-   * @returns The initial state of the game.
-   */
-  startGame(metaSkillPoints: number): Omit<GameState, 'gamePhase'> {
+  startGame(metaSkillPoints: number) {
     const player = createInitialPlayer(metaSkillPoints);
     return {
       player,
-      currentEvent: createWeeklyChoiceEvent(player), // FIX: Use the new weekly event creator
+      currentEvent: createWeeklyChoiceEvent(player),
       isLoading: false,
     };
   },
 
-  /**
-   * Processes a player's choice for the current event.
-   * @param currentPlayer - The current player object.
-   * @param choice - The choice made by the player.
-   * @returns The result of the turn, including the next state and any messages.
-   */
   processPlayerChoice(
     currentPlayer: Player,
     choice: Choice
@@ -41,22 +30,43 @@ export const gameEngine = {
       choice.action(currentPlayer);
 
     let processedOutcomeMessage = outcomeMessage;
+    const playerAfterChoiceAction = { ...updatedPlayer };
+
+    // --- FIX: Record the game result directly onto the schedule ---
     if (gamePerformance) {
       const { statLine, teamWon } = gamePerformance;
+
+      // Update the schedule item for the current week with the game's result
+      const scheduleWithResult = playerAfterChoiceAction.schedule.schedule.map((item) => {
+        if (item.week === playerAfterChoiceAction.currentWeek) {
+          return { ...item, gameResult: { playerStats: statLine, teamWon } };
+        }
+        return item;
+      });
+
+      // Update the player's schedule object
+      playerAfterChoiceAction.schedule = {
+        ...playerAfterChoiceAction.schedule,
+        schedule: scheduleWithResult,
+        wins: teamWon
+          ? playerAfterChoiceAction.schedule.wins + 1
+          : playerAfterChoiceAction.schedule.wins,
+        losses: !teamWon
+          ? playerAfterChoiceAction.schedule.losses + 1
+          : playerAfterChoiceAction.schedule.losses,
+      };
+
+      // Construct a detailed outcome message for the log
       const resultString = teamWon ? 'Your team WON!' : 'Your team LOST.';
       const statString = `In ${statLine.minutes}m, you had ${statLine.points} PTS, ${statLine.rebounds} REB, ${statLine.assists} AST.`;
-      if (outcomeMessage && !outcomeMessage.includes(statString)) {
-        processedOutcomeMessage = `${outcomeMessage} ${statString} ${resultString}`;
-      } else {
-        processedOutcomeMessage = `${statString} ${resultString}`;
-      }
+      processedOutcomeMessage = `${outcomeMessage} ${statString} ${resultString}`;
     }
+    // --- End of FIX ---
 
     const newLogEntry = processedOutcomeMessage;
-    const newLog = [...updatedPlayer.careerLog, newLogEntry];
-    const playerAfterChoiceAction = { ...updatedPlayer, careerLog: newLog };
+    const newLog = [...playerAfterChoiceAction.careerLog, newLogEntry];
+    playerAfterChoiceAction.careerLog = newLog;
 
-    // FIX: Call processWeek instead of processTurn
     const turnResult = processWeek(playerAfterChoiceAction, immediateEvent ?? null);
 
     return {
@@ -68,13 +78,6 @@ export const gameEngine = {
     };
   },
 
-  /**
-   * Finalizes the player state upon retirement.
-   * @param player - The player object at the moment of retirement.
-   * @param metaSkillPointsAtRunStart - Legacy points at the start of the run.
-   * @param retirementMessage - Optional message for retirement.
-   * @returns The final player state and the new total meta skill points.
-   */
   processPlayerRetirement(
     player: Player,
     metaSkillPointsAtRunStart: number,
@@ -83,14 +86,7 @@ export const gameEngine = {
     return logicProcessPlayerRetirement(player, metaSkillPointsAtRunStart, retirementMessage);
   },
 
-  /**
-   * Regenerates a weekly choice event for a player.
-   * This is useful when loading a game from storage.
-   * @param player - The player for whom to generate the event.
-   * @returns A new GameEvent.
-   */
   regenerateWeeklyEvent(player: Player): GameEvent {
-    // FIX: Renamed from regenerateDailyEvent
     return createWeeklyChoiceEvent(player);
   },
 };
