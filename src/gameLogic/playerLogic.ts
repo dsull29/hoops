@@ -42,3 +42,36 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
     careerLog: ['Your High School career begins as a Freshman Newcomer!'],
   };
 };
+
+interface RetirementProcessingResult {
+  finalPlayerState: Player;
+  newTotalMetaSkillPoints: number;
+}
+
+export const processPlayerRetirement = (
+  currentPlayer: Player,
+  metaSkillPointsAtRunStart: number,
+  retirementMessage: string = '--- CAREER OVER: You decided to retire voluntarily. ---' // Default message
+): RetirementProcessingResult => {
+  const updatedPlayer = {
+    ...currentPlayer,
+    careerOver: true,
+    careerLog: [...currentPlayer.careerLog, retirementMessage],
+  };
+
+  const pointsEarned =
+    Math.floor(updatedPlayer.totalDaysPlayed / 10) +
+    updatedPlayer.stats.shooting +
+    updatedPlayer.stats.athleticism;
+  const newTotalMetaSkillPoints = metaSkillPointsAtRunStart + pointsEarned;
+
+  const finalPlayerState: Player = {
+    ...updatedPlayer,
+    stats: {
+      ...updatedPlayer.stats,
+      skillPoints: newTotalMetaSkillPoints, // Store the new total on the player for game over screen
+    },
+  };
+
+  return { finalPlayerState, newTotalMetaSkillPoints };
+};

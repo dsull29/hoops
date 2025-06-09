@@ -109,6 +109,7 @@ export const createDailyChoiceEvent = (player: Player): GameEvent => {
 };
 
 export const gameDayEvent = (player: Player): GameEvent => {
+  console.log(`Game Day Event Triggered for Player ID: ${player.name}, Game Mode: ${player.gameMode}, Season: ${player.currentSeasonInMode}, Day: ${player.currentDayInSeason}`);
   const createGameOutcomeMessage = (
     gamePerformance: { statLine: GameStatLine; teamWon: boolean },
     baseMessage: string
