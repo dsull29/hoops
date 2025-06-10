@@ -4,7 +4,7 @@ import {
   COLLEGE_ROLES,
   HIGH_SCHOOL_MAX_SEASONS,
   HIGH_SCHOOL_ROLES,
-  MAX_ENERGY, // Import MAX_ENERGY
+  MAX_ENERGY,
   PROFESSIONAL_ROLES,
 } from '../constants';
 import type { GameEvent, GameMode, Player, PlayerRole } from '../types';
@@ -34,39 +34,91 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
     logMessages.push(
       `--- You've graduated High School and are now entering College as a ${newRole}! ---`
     );
-  } else if (
+    return { newRole, newMode, logMessages };
+  }
+
+  // Fix: Use >= for college graduation as well for consistency.
+  if (
     gameMode === 'College' &&
-    (currentSeasonInMode > COLLEGE_MAX_SEASONS || age >= COLLEGE_GRADUATION_AGE)
+    (currentSeasonInMode >= COLLEGE_MAX_SEASONS || age >= COLLEGE_GRADUATION_AGE)
   ) {
     newMode = 'Professional';
-    newRole = PROFESSIONAL_ROLES[0];
+    newRole = PROFESSIONAL_ROLES[0]; // Start as an Undrafted Free Agent
     logMessages.push(
       `--- Your College career ends. You're taking your talents to the pros as an ${newRole}! ---`
     );
+    return { newRole, newMode, logMessages };
   }
-  const currentEffectiveRolesArray =
-    newMode === 'High School'
+
+  // --- 2. IN-MODE PROGRESSION (IF NOT GRADUATING) ---
+  // FIX: Explicitly type `roles` as an array of the union type `PlayerRole`.
+  // This prevents TypeScript from inferring a union of arrays, which causes the `indexOf` error.
+  const roles: readonly PlayerRole[] =
+    gameMode === 'High School'
       ? HIGH_SCHOOL_ROLES
-      : newMode === 'College'
+      : gameMode === 'College'
       ? COLLEGE_ROLES
       : PROFESSIONAL_ROLES;
-  let currentIndex = (currentEffectiveRolesArray as PlayerRole[]).indexOf(newRole);
-  if (currentIndex === -1) {
-    newRole = currentEffectiveRolesArray[0];
-    currentIndex = 0;
+
+  let roleIndex = roles.indexOf(newRole);
+  if (roleIndex === -1) {
+    roleIndex = 0;
   }
-  const promotionThreshold = 100 + currentIndex * 15;
-  const demotionThreshold = 70 + currentIndex * 10;
-  if (
-    performanceScore > promotionThreshold &&
-    currentIndex < currentEffectiveRolesArray.length - 1
-  ) {
-    newRole = currentEffectiveRolesArray[currentIndex + 1];
-    logMessages.push(`Your hard work paid off! You've been promoted to: ${newRole}.`);
-  } else if (performanceScore < demotionThreshold && currentIndex > 0) {
-    newRole = currentEffectiveRolesArray[currentIndex - 1];
-    logMessages.push(`A tough season. Your role has been adjusted to: ${newRole}.`);
+
+  // --- FIX: Add mandatory year-based progression for High School ---
+  if (gameMode === 'High School') {
+    const nextSeasonInMode = currentSeasonInMode + 1; // The season we are about to start
+    let minRoleIndex = -1;
+
+    // FIX: Use the specific HIGH_SCHOOL_ROLES array when checking for string literals
+    // to provide TypeScript with the correct type context.
+    if (nextSeasonInMode === 2) {
+      // Entering Sophomore year
+      minRoleIndex = HIGH_SCHOOL_ROLES.indexOf('Sophomore Contender');
+    } else if (nextSeasonInMode === 3) {
+      // Entering Junior year
+      minRoleIndex = HIGH_SCHOOL_ROLES.indexOf('Junior Varsity Player');
+    } else if (nextSeasonInMode === 4) {
+      // Entering Senior year
+      minRoleIndex = HIGH_SCHOOL_ROLES.indexOf('Varsity Rotation');
+    }
+
+    if (minRoleIndex !== -1 && roleIndex < minRoleIndex) {
+      roleIndex = minRoleIndex;
+      const yearName = roles[roleIndex].split(' ')[0];
+      logMessages.push(`A new school year begins! You're now a ${yearName}.`);
+    }
   }
+
+  // --- 3. PERFORMANCE-BASED PROGRESSION ---
+  // Check for changes from the new baseline role (set by year, if applicable)
+  const promotionThreshold = 100 + roleIndex * 15;
+  const demotionThreshold = 70 + roleIndex * 10;
+
+  if (performanceScore > promotionThreshold && roleIndex < roles.length - 1) {
+    roleIndex++;
+    logMessages.push(`Your hard work paid off! You've been promoted to: ${roles[roleIndex]}.`);
+  } else if (performanceScore < demotionThreshold && roleIndex > 0) {
+    // Determine the minimum role index for the current year to prevent demoting too far
+    let minDemotionIndex = 0;
+    if (gameMode === 'High School') {
+      const nextSeasonInMode = currentSeasonInMode + 1;
+      // FIX: Use the specific HIGH_SCHOOL_ROLES array here as well.
+      if (nextSeasonInMode === 2)
+        minDemotionIndex = HIGH_SCHOOL_ROLES.indexOf('Sophomore Contender');
+      if (nextSeasonInMode === 3)
+        minDemotionIndex = HIGH_SCHOOL_ROLES.indexOf('Junior Varsity Player');
+      if (nextSeasonInMode === 4) minDemotionIndex = HIGH_SCHOOL_ROLES.indexOf('Varsity Rotation');
+    }
+
+    if (roleIndex > minDemotionIndex) {
+      roleIndex--;
+      logMessages.push(`A tough season. Your role has been adjusted to: ${roles[roleIndex]}.`);
+    }
+  }
+
+  newRole = roles[roleIndex];
+
   return { newRole, newMode, logMessages };
 };
 
