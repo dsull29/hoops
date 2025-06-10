@@ -54,8 +54,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ player }) => {
               {player.stats[key]}
             </Descriptions.Item>
           ))}
-          <Descriptions.Item label={<OverText strong>Total Days Played</OverText>}>
-            {player.totalDaysPlayed}
+          {/* FIX: Changed totalDaysPlayed to totalWeeksPlayed and updated the label */}
+          <Descriptions.Item label={<OverText strong>Total Weeks Played</OverText>}>
+            {player.totalWeeksPlayed}
           </Descriptions.Item>
           <Descriptions.Item label={<OverText strong>Legacy Points Earned (This Run)</OverText>}>
             {pointsEarnedThisRun}
