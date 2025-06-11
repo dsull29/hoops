@@ -19,7 +19,14 @@ interface StatDataItem {
 }
 
 export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }) => {
-  const { stats, schedule } = player;
+  // Defensive check in case the player prop is not yet loaded.
+  if (!player) {
+    return <Card>Loading player data...</Card>;
+  }
+
+  // Use default fallbacks to prevent crashes if data is missing.
+  const stats = player.stats || {};
+  const schedule = player.schedule || { wins: 0, losses: 0 };
 
   const columns: ColumnsType<StatDataItem> = [
     { title: 'Shooting', dataIndex: 'Shooting', key: 'Shooting', align: 'center' },
@@ -32,11 +39,11 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
   const data: StatDataItem[] = [
     {
       key: 'values',
-      Shooting: stats.shooting,
-      Athleticism: stats.athleticism,
-      'Basketball IQ': stats.basketballIQ,
-      Energy: stats.energy,
-      Morale: stats.morale,
+      Shooting: stats.shooting ?? 'N/A',
+      Athleticism: stats.athleticism ?? 'N/A',
+      'Basketball IQ': stats.basketballIQ ?? 'N/A',
+      Energy: stats.energy ?? 'N/A',
+      Morale: stats.morale ?? 'N/A',
     },
   ];
 
@@ -45,7 +52,8 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
       size='small'
       title={
         <PlayerTitle level={5} style={{ margin: 0 }}>
-          {player.name} - {player.position} ({player.age} y.o.)
+          {player.name || 'Unnamed Player'} - {player.position || 'No Position'} ({player.age || 0}{' '}
+          y.o.)
         </PlayerTitle>
       }
       style={{ marginBottom: 16 }}
@@ -53,26 +61,30 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
       <Descriptions size='small' column={3} style={{ marginBottom: 12 }}>
         <Descriptions.Item label='Mode'>
           <Tag color='purple' style={{ marginRight: 0 }}>
-            {player.gameMode}
+            {player.gameMode || 'N/A'}
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label='Role'>
           <Tag color='blue' style={{ marginRight: 0 }}>
-            {player.currentRole}
+            {player.currentRole || 'N/A'}
           </Tag>
         </Descriptions.Item>
-        {/* FIX: Add Season Record */}
         <Descriptions.Item label='Record'>
-          <Text strong style={{ color: '#52c41a' }}>{schedule.wins}</Text> -
-          <Text strong style={{ color: '#f5222d' }}>{schedule.losses}</Text>
+          <Text strong style={{ color: '#52c41a' }}>
+            {schedule.wins}
+          </Text>{' '}
+          -
+          <Text strong style={{ color: '#f5222d' }}>
+            {schedule.losses}
+          </Text>
         </Descriptions.Item>
-        <Descriptions.Item label='Season'>
-          {player.currentSeasonInMode} ({player.currentSeason} career)
+        {/* FIX: Removed the extra career text */}
+        <Descriptions.Item label='Season'>{player.currentSeasonInMode || 1}</Descriptions.Item>
+        {/* FIX: Removed the extra total days text */}
+        <Descriptions.Item label='Day' span={2}>
+          {player.currentDayInSeason || 1}
         </Descriptions.Item>
-        <Descriptions.Item label='Week' span={2}>
-          {player.currentWeek} ({player.totalWeeksPlayed} total)
-        </Descriptions.Item>
-        {player.traits.length > 0 && (
+        {player.traits?.length > 0 && (
           <Descriptions.Item label='Traits' span={3}>
             {player.traits.map((trait) => (
               <Tag key={trait} color='geekblue' style={{ marginRight: 3, marginBottom: 3 }}>
@@ -90,7 +102,6 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
         size='small'
         bordered
         style={{ marginBottom: 8 }}
-        rowClassName={() => 'stats-table-row'}
       />
     </Card>
   );

@@ -45,33 +45,29 @@ export interface PlayerStats {
   skillPoints: number;
 }
 
-// --- NEW: Season Structure Types ---
-export type ScheduleItemType =
-  | 'Pre-Season Game'
-  | 'Regular Season Game'
-  | 'Playoff Game'
-  | 'Championship'
-  | 'Training'
-  | 'Rest';
+// --- REFACTORED: Daily Season Structure ---
+export type ScheduleItemType = 'Practice' | 'Game' | 'Playoffs' | 'Championship' | 'Rest';
 
-export interface ScheduleItem {
-  week: number;
+export interface DailyScheduleItem {
+  day: number;
   type: ScheduleItemType;
-  opponent?: string; // e.g., "Rival High School"
+  opponent?: string;
   gameResult?: {
     playerStats: GameStatLine;
     teamWon: boolean;
   };
+  isCompleted: boolean;
 }
 
 export interface SeasonSchedule {
   year: number;
   gameMode: GameMode;
-  schedule: ScheduleItem[];
+  schedule: DailyScheduleItem[];
   wins: number;
   losses: number;
+  playoffEliminated: boolean;
 }
-// --- END NEW ---
+// --- END REFACTOR ---
 
 export interface Player {
   name: string;
@@ -85,10 +81,10 @@ export interface Player {
   currentSeasonInMode: number;
   careerOver: boolean;
   careerLog: string[];
-  // --- UPDATED: Switched from daily to weekly progression ---
-  currentWeek: number; // Replaces currentDayInSeason
-  totalWeeksPlayed: number; // Replaces totalDaysPlayed
-  schedule: SeasonSchedule; // Player now holds their current schedule
+  // --- UPDATED: Reverted to daily progression ---
+  currentDayInSeason: number;
+  totalDaysPlayed: number;
+  schedule: SeasonSchedule;
 }
 
 export interface GameStatLine {
@@ -106,7 +102,7 @@ export interface Choice {
     updatedPlayer: Player;
     outcomeMessage: string;
     immediateEvent?: GameEvent | null;
-    gamePerformance?: { statLine: GameStatLine; teamWon: boolean }; // For game day event
+    gamePerformance?: { statLine: GameStatLine; teamWon: boolean };
   };
   cost?: { stat: keyof PlayerStats; amount: number };
   disabled?: (player: Player) => boolean;

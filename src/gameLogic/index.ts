@@ -5,12 +5,12 @@
 
 export {
   agentMeetingEvent,
-  createWeeklyChoiceEvent,
+  createDailyChoiceEvent, // FIX: Exporting the correct daily function
   gameDayEvent,
   minorInjuryEvent,
 } from './eventDefinitions';
 
-export { processWeek } from './gameLoop';
+export { processDay } from './gameLoop'; // FIX: Changed from processWeek to processDay
 
 export { generatePlayerGameStats } from './playerGameStats';
 

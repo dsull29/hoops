@@ -17,8 +17,9 @@ type FullStore = PersistedState & {
   isLoading: boolean;
   startGame: () => void;
   handleChoice: (choice: Choice) => void;
-  handleRetire: () => void; // FIX: This action no longer returns a value.
+  handleRetire: () => void;
   clearSavedGame: () => void;
+  setCurrentEvent: (event: GameEvent) => void; // Added for UI-driven updates
 };
 
 export const useGameStore = create<FullStore>()(
@@ -30,6 +31,9 @@ export const useGameStore = create<FullStore>()(
       metaSkillPoints: 0,
       metaSkillPointsAtRunStart: 0,
       isLoading: false,
+
+      // Action to allow the UI to set the current event after hydration
+      setCurrentEvent: (event) => set({ currentEvent: event }),
 
       startGame: () => {
         const { metaSkillPoints } = get();
@@ -76,8 +80,6 @@ export const useGameStore = create<FullStore>()(
           }
         }, 300);
       },
-      // FIX: handleRetire now only manages state and doesn't return anything.
-      // The UI component is responsible for showing any confirmation messages.
       handleRetire: () => {
         const { player, metaSkillPointsAtRunStart } = get();
         if (!player) {
@@ -97,8 +99,6 @@ export const useGameStore = create<FullStore>()(
           isLoading: false,
         });
       },
-      // This action resets the state to its initial values, and the persist middleware
-      // will then overwrite the saved data in IndexedDB with this cleared state.
       clearSavedGame: () => {
         set({
           player: null,
@@ -117,17 +117,8 @@ export const useGameStore = create<FullStore>()(
         metaSkillPoints: state.metaSkillPoints,
         metaSkillPointsAtRunStart: state.metaSkillPointsAtRunStart,
       }),
-      // FIX: onRehydrateStorage now uses the store's `setState` method,
-      // which is a cleaner way to update non-persisted state after loading.
-      onRehydrateStorage: () => {
-        return (hydratedState) => {
-          if (hydratedState && hydratedState.player && hydratedState.gamePhase === 'playing') {
-            useGameStore.setState({
-              currentEvent: gameEngine.regenerateWeeklyEvent(hydratedState.player),
-            });
-          }
-        };
-      },
+      // FIX: onRehydrateStorage is no longer needed here.
+      // The logic will be handled in a useEffect within App.tsx.
     } as PersistOptions<FullStore, PersistedState>
   )
 );

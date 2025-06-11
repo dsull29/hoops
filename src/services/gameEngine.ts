@@ -1,8 +1,8 @@
 import {
+  createDailyChoiceEvent,
   createInitialPlayer,
-  createWeeklyChoiceEvent,
   processPlayerRetirement as logicProcessPlayerRetirement,
-  processWeek,
+  processDay,
 } from '../gameLogic';
 import type { Choice, GameEvent, Player } from '../types';
 
@@ -11,7 +11,7 @@ export const gameEngine = {
     const player = createInitialPlayer(metaSkillPoints);
     return {
       player,
-      currentEvent: createWeeklyChoiceEvent(player),
+      currentEvent: createDailyChoiceEvent(player),
       isLoading: false,
     };
   },
@@ -32,19 +32,17 @@ export const gameEngine = {
     let processedOutcomeMessage = outcomeMessage;
     const playerAfterChoiceAction = { ...updatedPlayer };
 
-    // --- FIX: Record the game result directly onto the schedule ---
     if (gamePerformance) {
       const { statLine, teamWon } = gamePerformance;
 
-      // Update the schedule item for the current week with the game's result
+      // FIX: Update logic to work with the daily schedule structure
       const scheduleWithResult = playerAfterChoiceAction.schedule.schedule.map((item) => {
-        if (item.week === playerAfterChoiceAction.currentWeek) {
-          return { ...item, gameResult: { playerStats: statLine, teamWon } };
+        if (item.day === playerAfterChoiceAction.currentDayInSeason) {
+          return { ...item, gameResult: { playerStats: statLine, teamWon }, isCompleted: true };
         }
         return item;
       });
 
-      // Update the player's schedule object
       playerAfterChoiceAction.schedule = {
         ...playerAfterChoiceAction.schedule,
         schedule: scheduleWithResult,
@@ -54,20 +52,24 @@ export const gameEngine = {
         losses: !teamWon
           ? playerAfterChoiceAction.schedule.losses + 1
           : playerAfterChoiceAction.schedule.losses,
+        // Mark the player as eliminated from playoffs on a loss in the 'Playoffs' or 'Championship'
+        playoffEliminated:
+          !teamWon && (choice.id === 'Playoffs' || choice.id === 'Championship')
+            ? true
+            : playerAfterChoiceAction.schedule.playoffEliminated,
       };
 
-      // Construct a detailed outcome message for the log
       const resultString = teamWon ? 'Your team WON!' : 'Your team LOST.';
       const statString = `In ${statLine.minutes}m, you had ${statLine.points} PTS, ${statLine.rebounds} REB, ${statLine.assists} AST.`;
       processedOutcomeMessage = `${outcomeMessage} ${statString} ${resultString}`;
     }
-    // --- End of FIX ---
 
     const newLogEntry = processedOutcomeMessage;
     const newLog = [...playerAfterChoiceAction.careerLog, newLogEntry];
     playerAfterChoiceAction.careerLog = newLog;
 
-    const turnResult = processWeek(playerAfterChoiceAction, immediateEvent ?? null);
+    // FIX: Call processDay instead of processWeek
+    const turnResult = processDay(playerAfterChoiceAction, immediateEvent ?? null);
 
     return {
       nextPlayerState: turnResult.nextPlayerState,
@@ -86,7 +88,8 @@ export const gameEngine = {
     return logicProcessPlayerRetirement(player, metaSkillPointsAtRunStart, retirementMessage);
   },
 
-  regenerateWeeklyEvent(player: Player): GameEvent {
-    return createWeeklyChoiceEvent(player);
+  // FIX: Rename to regenerateDailyEvent and use the correct function
+  regenerateDailyEvent(player: Player): GameEvent {
+    return createDailyChoiceEvent(player);
   },
 };

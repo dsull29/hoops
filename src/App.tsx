@@ -8,28 +8,29 @@ import {
   theme as antdTheme,
 } from 'antd';
 import type { ThemeConfig } from 'antd/es/config-provider';
-import React, { useEffect } from 'react';
+import React from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
-import { CalendarDisplay } from './components/CalendarDisplay';
+// Component Imports
 import { CareerLogDisplay } from './components/CareerLogDisplay';
+import { ErrorBoundaryFallback } from './components/ErrorBoundaryFallback';
 import { EventDisplay } from './components/EventDisplay';
+import { FiveDaySchedule } from './components/FiveDaySchedule';
 import { GameLayout } from './components/GameLayout';
 import { GameOverScreen } from './components/GameOverScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
+// Hook and Store Imports
+import { useHydration } from './hooks/useHydration';
 import { useGameStore } from './store/gameStore';
 import { useUIStore } from './store/uiStore';
 
 const AppContent: React.FC = () => {
-  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire } = useGameStore();
-  const { isDarkMode, hasLoadedInitialState, setDarkMode, setHasLoaded } = useUIStore();
-  const [modal, contextHolderModal] = AntdModal.useModal();
+  useHydration();
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('HoopsTheme_v1');
-    setDarkMode(storedTheme === 'dark');
-    setHasLoaded(true);
-  }, [setDarkMode, setHasLoaded]);
+  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire } = useGameStore();
+  const { isDarkMode, hasLoadedInitialState, setDarkMode } = useUIStore();
+  const [modal, contextHolderModal] = AntdModal.useModal();
 
   const confirmRetire = () => {
     modal.confirm({
@@ -95,7 +96,7 @@ const AppContent: React.FC = () => {
               </Button>
             </div>
             <PlayerStatsDisplay player={player} />
-            <CalendarDisplay player={player} />
+            <FiveDaySchedule player={player} />
             <EventDisplay
               event={currentEvent}
               player={player}
@@ -120,10 +121,20 @@ const App: React.FC = () => {
     },
   };
 
+  const handleReset = () => {
+    // This function will be called when the user clicks the "Try Again" button.
+    // We can clear the potentially corrupted saved game state.
+    useGameStore.getState().clearSavedGame();
+    // And then reload the page to start fresh.
+    window.location.reload();
+  };
+
   return (
     <ConfigProvider theme={antdThemeConfig}>
       <AntdApp>
-        <AppContent />
+        <ErrorBoundary FallbackComponent={ErrorBoundaryFallback} onReset={handleReset}>
+          <AppContent />
+        </ErrorBoundary>
       </AntdApp>
     </ConfigProvider>
   );

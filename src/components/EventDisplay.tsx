@@ -1,10 +1,8 @@
-// --- FILE: src/components/EventDisplay.tsx ---
-
 import { Button, Card, Space, Typography } from 'antd';
 import React from 'react';
 import type { Choice, GameEvent, Player } from '../types';
 
-const { Text: EventTextCompDisplay, Paragraph: EventParagraphCompDisplay } = Typography; // Renamed
+const { Text: EventText, Paragraph: EventParagraph } = Typography;
 
 interface EventDisplayProps {
   event: GameEvent;
@@ -19,18 +17,18 @@ export const EventDisplay: React.FC<EventDisplayProps> = ({
   isLoading,
 }) => (
   <Card
-    // Removed the title prop to make it more compact
     style={{ marginBottom: 24 }}
-    bodyStyle={{ paddingTop: 16 }} // Reduce top padding if title is removed
+    // FIX: Replaced deprecated bodyStyle with the new styles prop
+    styles={{ body: { paddingTop: 16 } }}
   >
-    <EventParagraphCompDisplay
+    <EventParagraph
       style={{ marginBottom: 16, fontSize: '1.05em', fontWeight: 500, textAlign: 'center' }}
     >
-      {event.title} {/* Display title as prominent text instead of Card title */}
-    </EventParagraphCompDisplay>
-    <EventParagraphCompDisplay style={{ marginBottom: 16, textAlign: 'center' }}>
+      {event.title}
+    </EventParagraph>
+    <EventParagraph style={{ marginBottom: 16, textAlign: 'center' }}>
       {event.description}
-    </EventParagraphCompDisplay>
+    </EventParagraph>
     <Space direction='vertical' style={{ width: '100%' }} size='small'>
       {event.choices.map((choice) => {
         const isDisabled = choice.disabled
@@ -63,19 +61,19 @@ export const EventDisplay: React.FC<EventDisplayProps> = ({
               textAlign: 'left',
             }}
           >
-            <EventTextCompDisplay strong style={{ fontSize: '0.95em', display: 'block' }}>
+            <EventText strong style={{ fontSize: '0.95em', display: 'block' }}>
               {choice.text}
-            </EventTextCompDisplay>
+            </EventText>
             {choice.description && (
-              <EventTextCompDisplay
+              <EventText
                 type='secondary'
                 style={{ fontSize: '0.8em', display: 'block', marginTop: 1 }}
               >
                 {choice.description}
-              </EventTextCompDisplay>
+              </EventText>
             )}
             {choice.cost && (
-              <EventTextCompDisplay
+              <EventText
                 style={{
                   fontSize: '0.75em',
                   color: isDisabled ? 'inherit' : '#ff7875',
@@ -84,7 +82,7 @@ export const EventDisplay: React.FC<EventDisplayProps> = ({
                 }}
               >
                 Cost: {choice.cost.amount} {choice.cost.stat}
-              </EventTextCompDisplay>
+              </EventText>
             )}
           </Button>
         );

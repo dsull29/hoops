@@ -8,17 +8,11 @@ const getDiminishingReturnsGain = (currentStatValue: number, professionalism: nu
   const randomFactor = Math.random();
   const professionalBonusChance = professionalism > 75 ? 0.25 : professionalism > 50 ? 0.15 : 0.05;
 
-  if (currentStatValue < 50) {
-    gain = randomFactor < 0.65 ? 2 : 1;
-  } else if (currentStatValue < 70) {
-    gain = randomFactor < 0.45 ? 2 : 1;
-  } else if (currentStatValue < 85) {
-    gain = randomFactor < 0.75 ? 1 : 0;
-  } else if (currentStatValue < 95) {
-    gain = randomFactor < 0.4 ? 1 : 0;
-  } else {
-    gain = randomFactor < 0.15 ? 1 : 0;
-  }
+  if (currentStatValue < 50) gain = randomFactor < 0.65 ? 2 : 1;
+  else if (currentStatValue < 70) gain = randomFactor < 0.45 ? 2 : 1;
+  else if (currentStatValue < 85) gain = randomFactor < 0.75 ? 1 : 0;
+  else if (currentStatValue < 95) gain = randomFactor < 0.4 ? 1 : 0;
+  else gain = randomFactor < 0.15 ? 1 : 0;
 
   if (gain > 0 && gain < 2 && Math.random() < professionalBonusChance) {
     gain += 1;
@@ -26,88 +20,94 @@ const getDiminishingReturnsGain = (currentStatValue: number, professionalism: nu
   return Math.min(gain, 2);
 };
 
-export const createWeeklyChoiceEvent = (player: Player): GameEvent => {
+export const createDailyChoiceEvent = (player: Player): GameEvent => {
   const choices: Choice[] = [
     {
-      id: 'intense_training_week',
-      text: 'Intense Training Week',
-      description: 'Focus on all-around improvement. High stat gain, high energy cost.',
-      cost: { stat: 'energy', amount: 50 },
+      id: 'train_shooting',
+      text: 'Train Shooting',
+      description: 'Hit the gym to work on your jumper.',
+      cost: { stat: 'energy', amount: 20 },
       action: (p) => {
         const newStats = { ...p.stats };
-        const shootingGain = getDiminishingReturnsGain(newStats.shooting, newStats.professionalism);
-        const athleticismGain = getDiminishingReturnsGain(
-          newStats.athleticism,
-          newStats.professionalism
-        );
-        const iqGain = getDiminishingReturnsGain(newStats.basketballIQ, newStats.professionalism);
-
-        newStats.shooting = clamp(newStats.shooting + shootingGain, MIN_STAT_VALUE, MAX_STAT_VALUE);
-        newStats.athleticism = clamp(
-          newStats.athleticism + athleticismGain,
-          MIN_STAT_VALUE,
-          MAX_STAT_VALUE
-        );
-        newStats.basketballIQ = clamp(
-          newStats.basketballIQ + iqGain,
-          MIN_STAT_VALUE,
-          MAX_STAT_VALUE
-        );
-        newStats.energy = clamp(newStats.energy - 50, 0, MAX_ENERGY);
-
+        const gain = getDiminishingReturnsGain(newStats.shooting, newStats.professionalism);
+        if (gain > 0)
+          newStats.shooting = clamp(newStats.shooting + gain, MIN_STAT_VALUE, MAX_STAT_VALUE);
+        newStats.energy = clamp(newStats.energy - 20, 0, MAX_ENERGY);
+        const gainMsg = gain > 0 ? `Shooting +${gain}.` : 'No improvement this time.';
         return {
           updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `A grueling week! Gains: +${shootingGain} SHO, +${athleticismGain} ATH, +${iqGain} BBIQ. Energy -50.`,
+          outcomeMessage: `Focused on shooting. ${gainMsg} Energy -20.`,
         };
       },
-      disabled: (p) => p.stats.energy < 50,
+      disabled: (p) => p.stats.energy < 20,
     },
     {
-      id: 'skill_focus_week',
-      text: 'Skill Focus: Shooting',
-      description: 'Spend the week in the gym working on your jumper.',
-      cost: { stat: 'energy', amount: 35 },
+      id: 'train_athleticism',
+      text: 'Train Athleticism',
+      description: 'Conditioning and strength training.',
+      cost: { stat: 'energy', amount: 25 },
       action: (p) => {
         const newStats = { ...p.stats };
-        const gain = getDiminishingReturnsGain(newStats.shooting, newStats.professionalism) + 1; // Bonus for focus
-        newStats.shooting = clamp(newStats.shooting + gain, MIN_STAT_VALUE, MAX_STAT_VALUE);
-        newStats.energy = clamp(newStats.energy - 35, 0, MAX_ENERGY);
+        const gain = getDiminishingReturnsGain(newStats.athleticism, newStats.professionalism);
+        if (gain > 0)
+          newStats.athleticism = clamp(newStats.athleticism + gain, MIN_STAT_VALUE, MAX_STAT_VALUE);
+        newStats.energy = clamp(newStats.energy - 25, 0, MAX_ENERGY);
+        const gainMsg = gain > 0 ? `Athleticism +${gain}.` : 'No improvement this time.';
         return {
           updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `You lived in the gym this week. Shooting +${gain}. Energy -35.`,
+          outcomeMessage: `Pushed hard on athleticism. ${gainMsg} Energy -25.`,
         };
       },
-      disabled: (p) => p.stats.energy < 35,
+      disabled: (p) => p.stats.energy < 25,
     },
     {
-      id: 'recovery_week',
-      text: 'Rest & Recovery Week',
-      description: 'Take it easy to recover energy and morale for the upcoming games.',
+      id: 'study_film',
+      text: 'Study Film',
+      description: 'Analyze game footage to improve your BBIQ.',
+      cost: { stat: 'energy', amount: 10 },
+      action: (p) => {
+        const newStats = { ...p.stats };
+        const gain = getDiminishingReturnsGain(newStats.basketballIQ, newStats.professionalism);
+        if (gain > 0)
+          newStats.basketballIQ = clamp(
+            newStats.basketballIQ + gain,
+            MIN_STAT_VALUE,
+            MAX_STAT_VALUE
+          );
+        newStats.energy = clamp(newStats.energy - 10, 0, MAX_ENERGY);
+        const gainMsg = gain > 0 ? `BBIQ +${gain}.` : 'No new insights this time.';
+        return {
+          updatedPlayer: { ...p, stats: newStats },
+          outcomeMessage: `Spent time studying film. ${gainMsg} Energy -10.`,
+        };
+      },
+      disabled: (p) => p.stats.energy < 10,
+    },
+    {
+      id: 'rest',
+      text: 'Rest & Recover',
+      description: 'Take a day off to recover energy.',
       action: (p) => {
         const newStats = { ...p.stats };
         newStats.energy = clamp(
-          newStats.energy + 40 + Math.floor(Math.random() * 10),
+          newStats.energy + 30 + Math.floor(Math.random() * 11),
           0,
           MAX_ENERGY
         );
-        newStats.morale = clamp(
-          newStats.morale + 10 + Math.floor(Math.random() * 5),
-          0,
-          MAX_MORALE
-        );
+        newStats.morale = clamp(newStats.morale + 5, 0, MAX_MORALE);
         return {
           updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: 'A much-needed recovery week. You feel refreshed and ready.',
+          outcomeMessage: 'Took a much-needed rest day. Energy and Morale increased.',
         };
       },
     },
   ];
   return {
-    id: 'weekly_choices',
-    title: `Week ${player.currentWeek} Focus`,
-    description: `It's the start of a new week. What is the plan?`,
+    id: 'daily_choices',
+    title: `Day ${player.currentDayInSeason} Focus`,
+    description: `What's the plan for today?`,
     choices: choices,
-    type: 'weekly',
+    type: 'daily',
   };
 };
 
@@ -116,7 +116,7 @@ export const gameDayEvent = (player: Player, opponent: string): GameEvent => {
     id: 'game_day',
     title: `Game Day vs ${opponent}!`,
     description:
-      "It's time to hit the court. Your preparation this week will determine your performance.",
+      "It's time to hit the court. Your energy and preparation will determine your performance.",
     isMandatory: true,
     choices: [
       {
@@ -178,7 +178,6 @@ export const minorInjuryEvent: GameEvent = {
   ],
 };
 
-// FIX: Re-added the agentMeetingEvent function
 export const agentMeetingEvent = (player: Player): GameEvent | null => {
   if (
     player.gameMode === 'High School' ||

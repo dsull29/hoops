@@ -1,11 +1,15 @@
-import { MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
+import { MAX_ENERGY, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import { HIGH_SCHOOL_ROLES } from '../constants/index';
 import type { Player } from '../types';
 import { clamp, getRandomName, getRandomPosition } from '../utils/index';
 import { generateSeasonSchedule } from './seasonLogic';
 
 export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
-  const baseStat = 25 + Math.floor(metaSkillPoints / 2);
+  // FIX: Ensure metaSkillPoints is always a valid number to prevent NaN calculations.
+  const validMetaPoints =
+    typeof metaSkillPoints === 'number' && !isNaN(metaSkillPoints) ? metaSkillPoints : 0;
+  const baseStat = 25 + Math.floor(validMetaPoints / 2);
+
   const initialSchedule = generateSeasonSchedule('High School', 1);
 
   return {
@@ -32,15 +36,15 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
       ),
       charisma: clamp(20 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
       professionalism: clamp(15 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      energy: 80,
+      energy: MAX_ENERGY,
       morale: 70,
-      skillPoints: metaSkillPoints,
+      skillPoints: validMetaPoints, // Use the sanitized value
     },
     traits: [],
     currentSeason: 1,
     currentSeasonInMode: 1,
-    currentWeek: 1,
-    totalWeeksPlayed: 0,
+    currentDayInSeason: 1,
+    totalDaysPlayed: 0,
     schedule: initialSchedule,
     careerOver: false,
     careerLog: ['Your High School career begins as a Freshman Newcomer!'],
@@ -63,11 +67,15 @@ export const processPlayerRetirement = (
     careerLog: [...currentPlayer.careerLog, retirementMessage],
   };
 
-  const pointsEarned =
-    Math.floor(updatedPlayer.totalWeeksPlayed * 2.5) + // Points per week now
-    updatedPlayer.stats.shooting +
-    updatedPlayer.stats.athleticism;
-  const newTotalMetaSkillPoints = metaSkillPointsAtRunStart + pointsEarned;
+  // FIX: Ensure stats are numbers before calculating points earned.
+  const shooting =
+    typeof updatedPlayer.stats.shooting === 'number' ? updatedPlayer.stats.shooting : 0;
+  const athleticism =
+    typeof updatedPlayer.stats.athleticism === 'number' ? updatedPlayer.stats.athleticism : 0;
+
+  const pointsEarned = Math.floor(updatedPlayer.totalDaysPlayed / 5) + shooting + athleticism;
+
+  const newTotalMetaSkillPoints = (metaSkillPointsAtRunStart || 0) + pointsEarned;
 
   const finalPlayerState: Player = {
     ...updatedPlayer,
