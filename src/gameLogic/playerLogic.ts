@@ -1,53 +1,54 @@
-import { MAX_ENERGY, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
-import { HIGH_SCHOOL_ROLES } from '../constants/index';
+import { MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import type { Player } from '../types';
 import { clamp, getRandomName, getRandomPosition } from '../utils/index';
 import { generateSeasonSchedule } from './seasonLogic';
 
 export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
-  // FIX: Ensure metaSkillPoints is always a valid number to prevent NaN calculations.
   const validMetaPoints =
     typeof metaSkillPoints === 'number' && !isNaN(metaSkillPoints) ? metaSkillPoints : 0;
-  const baseStat = 25 + Math.floor(validMetaPoints / 2);
+  // Increased base stats for a more experienced player
+  const baseStat = 35 + Math.floor(validMetaPoints / 2);
 
-  const initialSchedule = generateSeasonSchedule('High School', 1);
+  const initialSchedule = generateSeasonSchedule('High School', 3); // Start in year 3
 
   return {
     name: getRandomName(),
     position: getRandomPosition(),
-    age: 14,
+    age: 16, // Starting age for a junior
     gameMode: 'High School',
-    currentRole: HIGH_SCHOOL_ROLES[0],
+    currentRole: 'Junior Varsity Player', // Start as a JV Player
     stats: {
       shooting: clamp(
         baseStat + Math.floor(Math.random() * 15) - 7,
         MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 30
+        MAX_STAT_VALUE - 20
       ),
       athleticism: clamp(
         baseStat + Math.floor(Math.random() * 20) - 10,
         MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 25
+        MAX_STAT_VALUE - 15
       ),
       basketballIQ: clamp(
         baseStat + Math.floor(Math.random() * 15) - 7,
         MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 30
+        MAX_STAT_VALUE - 20
       ),
-      charisma: clamp(20 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      professionalism: clamp(15 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      energy: MAX_ENERGY,
-      morale: 70,
-      skillPoints: validMetaPoints, // Use the sanitized value
+      charisma: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+      professionalism: clamp(20 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+      durability: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+      morale: 75,
+      skillPoints: validMetaPoints,
     },
     traits: [],
-    currentSeason: 1,
-    currentSeasonInMode: 1,
+    currentSeason: 3, // Start in the 3rd season of High School
+    currentSeasonInMode: 3,
     currentDayInSeason: 1,
     totalDaysPlayed: 0,
     schedule: initialSchedule,
     careerOver: false,
-    careerLog: ['Your High School career begins as a Freshman Newcomer!'],
+    careerLog: [
+      'Your High School career begins as a Junior on the JV team. Time to make a name for yourself!',
+    ],
   };
 };
 
@@ -67,7 +68,6 @@ export const processPlayerRetirement = (
     careerLog: [...currentPlayer.careerLog, retirementMessage],
   };
 
-  // FIX: Ensure stats are numbers before calculating points earned.
   const shooting =
     typeof updatedPlayer.stats.shooting === 'number' ? updatedPlayer.stats.shooting : 0;
   const athleticism =

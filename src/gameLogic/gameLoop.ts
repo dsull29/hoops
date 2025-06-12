@@ -4,7 +4,6 @@ import {
   COLLEGE_ROLES,
   HIGH_SCHOOL_MAX_SEASONS,
   HIGH_SCHOOL_ROLES,
-  MAX_ENERGY,
   PROFESSIONAL_ROLES,
 } from '../constants';
 import type { GameEvent, GameMode, Player, PlayerRole } from '../types';
@@ -89,7 +88,7 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
     if (performanceScore > 320)
       targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('MVP Candidate'));
     else if (performanceScore > 300)
-      targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('All-League Performer'));
+      targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('All-League Player'));
     else if (performanceScore > 280)
       targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('All-Star Level Player'));
     else if (performanceScore > 250)
@@ -151,7 +150,8 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
     nextPlayerState.currentDayInSeason = 1;
     nextPlayerState.currentSeason += 1;
     nextPlayerState.age += 1;
-    nextPlayerState.stats.energy = MAX_ENERGY;
+    // FIX: No longer need to reset energy
+    // nextPlayerState.stats.energy = MAX_ENERGY;
 
     const progressResult = evaluatePlayerProgress(nextPlayerState);
 
@@ -178,9 +178,7 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
     nextEvent = {
       id: 'new_season_started',
       title: `Welcome to a New Season!`,
-      description: `It's the start of year ${nextPlayerState.currentSeason - 1} (Age: ${
-        nextPlayerState.age
-      }). You feel rested and ready to go. Your new role is ${nextPlayerState.currentRole}.`,
+      description: `It's the start of year ${nextPlayerState.currentSeason} (Age: ${nextPlayerState.age}). You feel ready to go. Your new role is ${nextPlayerState.currentRole}.`,
       isMandatory: true,
       choices: [
         {
@@ -214,8 +212,6 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
         nextEvent = gameDayEvent(nextPlayerState, today.opponent || 'Rival');
       }
     } else {
-      // It's a non-game day, so check for random events
-      // RESTORED: Monthly check for in-season promotion
       if (nextPlayerState.currentDayInSeason % 30 === 0) {
         const roles: readonly PlayerRole[] =
           nextPlayerState.gameMode === 'High School'
@@ -250,9 +246,10 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
           };
         }
       }
-      // If no promotion, check for other random events
       if (!nextEvent) {
-        if (Math.random() < 0.05 && nextPlayerState.stats.energy < 40) {
+        // FIX: Injury chance is now higher if durability is low.
+        const injuryChance = 0.05 - (nextPlayerState.stats.durability - 50) * 0.001;
+        if (Math.random() < injuryChance) {
           nextEvent = minorInjuryEvent;
         } else if (
           nextPlayerState.totalDaysPlayed > 0 &&

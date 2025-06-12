@@ -47,24 +47,27 @@ const DayCard: React.FC<{ item: DailyScheduleItem; isToday: boolean }> = ({ item
 export const FiveDaySchedule: React.FC<FiveDayScheduleProps> = ({ player }) => {
   const { schedule, currentDayInSeason } = player;
 
-  // Find the index of today's schedule item
   const todayIndex = schedule.schedule.findIndex((item) => item.day === currentDayInSeason);
 
-  // Get the next 5 days, or fewer if we're at the end of the season
-  const upcomingDays = schedule.schedule.slice(todayIndex, todayIndex + 5);
+  // FIX: If today isn't found (e.g., at the very end of a season), default to the start.
+  // This makes the component more robust against edge cases.
+  const startIndex = todayIndex === -1 ? 0 : todayIndex;
+  const upcomingDays = schedule.schedule.slice(startIndex, startIndex + 5);
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <Title level={5} style={{ textAlign: 'center' }}>Upcoming Schedule</Title>
+      <Title level={5} style={{ textAlign: 'center' }}>
+        Upcoming Schedule
+      </Title>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${upcomingDays.length}, 1fr)`,
+          gridTemplateColumns: `repeat(${upcomingDays.length > 0 ? upcomingDays.length : 1}, 1fr)`,
           gap: '16px',
         }}
       >
         {upcomingDays.map((item, index) => (
-          <DayCard key={item.day} item={item} isToday={index === 0} />
+          <DayCard key={item.day} item={item} isToday={index === 0 && startIndex === todayIndex} />
         ))}
       </div>
     </div>

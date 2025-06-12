@@ -1,17 +1,16 @@
 import {
   App as AntdApp,
-  message as antdMessageApi,
   Modal as AntdModal,
-  theme as antdTheme,
   Button,
   ConfigProvider,
   Space,
   Spin,
+  message as antdMessageApi,
+  theme as antdTheme,
 } from 'antd';
 import type { ThemeConfig } from 'antd/es/config-provider';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-
 // Component Imports
 import { CareerLogDisplay } from './components/CareerLogDisplay';
 import { ErrorBoundaryFallback } from './components/ErrorBoundaryFallback';
@@ -21,22 +20,29 @@ import { GameLayout } from './components/GameLayout';
 import { GameOverScreen } from './components/GameOverScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PlayerStatsDisplay } from './components/PlayerStatsDisplay';
-// Hook and Store Imports
-import { useHydration } from './hooks/useHydration';
+// Store Imports
 import { useGameStore } from './store/gameStore';
 import { useUIStore } from './store/uiStore';
 
-
-/**
- * NEW: A component for the simulation control buttons.
- */
-const SimulationControls: React.FC<{ onSimDay: () => void; onSimToNext: () => void; isLoading: boolean }> = ({ onSimDay, onSimToNext, isLoading }) => (
-  <div style={{ padding: '20px', background: '#fafafa', borderRadius: '8px', textAlign: 'center', marginBottom: 24 }}>
+const SimulationControls: React.FC<{
+  onSimDay: () => void;
+  onSimToNext: () => void;
+  isLoading: boolean;
+}> = ({ onSimDay, onSimToNext, isLoading }) => (
+  <div
+    style={{
+      padding: '20px',
+      background: '#fafafa',
+      borderRadius: '8px',
+      textAlign: 'center',
+      marginBottom: 24,
+    }}
+  >
     <Space>
-      <Button type="default" size="large" onClick={onSimDay} disabled={isLoading}>
+      <Button type='default' size='large' onClick={onSimDay} disabled={isLoading}>
         Sim Next Day
       </Button>
-      <Button type="primary" size="large" onClick={onSimToNext} disabled={isLoading}>
+      <Button type='primary' size='large' onClick={onSimToNext} disabled={isLoading}>
         Sim to Next Event
       </Button>
     </Space>
@@ -44,11 +50,9 @@ const SimulationControls: React.FC<{ onSimDay: () => void; onSimToNext: () => vo
 );
 
 const AppContent: React.FC = () => {
-  useHydration();
-
-  // Updated to include new sim actions
-  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire, simDay, simToNextEvent } = useGameStore();
-  const { isDarkMode, hasLoadedInitialState, setDarkMode } = useUIStore();
+  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire, simDay, simToNextEvent } =
+    useGameStore();
+  const { isDarkMode, setDarkMode } = useUIStore();
   const [modal, contextHolderModal] = AntdModal.useModal();
 
   const confirmRetire = () => {
@@ -63,24 +67,6 @@ const AppContent: React.FC = () => {
       },
     });
   };
-
-  if (!hasLoadedInitialState) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          width: '100vw',
-        }}
-      >
-        <div>
-          <Spin size='large' tip='Loading Game...' />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -117,7 +103,6 @@ const AppContent: React.FC = () => {
             <PlayerStatsDisplay player={player} />
             <FiveDaySchedule player={player} />
 
-            {/* --- CORE UI CHANGE --- */}
             {currentEvent ? (
               <EventDisplay
                 event={currentEvent}
@@ -126,7 +111,11 @@ const AppContent: React.FC = () => {
                 isLoading={isLoading}
               />
             ) : (
-              <SimulationControls onSimDay={simDay} onSimToNext={simToNextEvent} isLoading={isLoading} />
+              <SimulationControls
+                onSimDay={simDay}
+                onSimToNext={simToNextEvent}
+                isLoading={isLoading}
+              />
             )}
 
             <CareerLogDisplay logEntries={player.careerLog} />
@@ -138,7 +127,53 @@ const AppContent: React.FC = () => {
   );
 };
 
-// The main App component remains the same
+/**
+ * NEW: This component acts as a gatekeeper. It ensures that the main app
+ * content only renders *after* the persisted state has been fully loaded (hydrated).
+ * This prevents the "flash and disappear" bug.
+ */
+const AppGate: React.FC = () => {
+  const [isHydrated, setIsHydrated] = React.useState(false);
+
+  React.useEffect(() => {
+    // onHasHydrated will be true on the first run if the state is already hydrated.
+    const onHasHydrated = useGameStore.persist.hasHydrated();
+    if (onHasHydrated) {
+      console.log('[AppGate] State was already hydrated.');
+      setIsHydrated(true);
+    }
+
+    // onFinishHydration is the definitive listener for when async storage is loaded.
+    const unsubFinishHydration = useGameStore.persist.onFinishHydration(() => {
+      console.log('[AppGate] onFinishHydration triggered. State is now hydrated.');
+      const state = useGameStore.getState();
+
+      // Sanity check for corrupted state
+      if (state.gamePhase === 'playing' && !state.player) {
+        console.warn('[AppGate] Detected corrupted state (playing phase with no player). Resetting.');
+        state.clearSavedGame();
+      }
+
+      setIsHydrated(true);
+    });
+
+    return () => {
+      unsubFinishHydration();
+    };
+  }, []);
+
+  if (!isHydrated) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size='large' tip='Loading Game...' />
+      </div>
+    );
+  }
+
+  return <AppContent />;
+};
+
+
 const App: React.FC = () => {
   const isDarkMode = useUIStore((state) => state.isDarkMode);
   const antdThemeConfig: ThemeConfig = {
@@ -157,12 +192,12 @@ const App: React.FC = () => {
     <ConfigProvider theme={antdThemeConfig}>
       <AntdApp>
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback} onReset={handleReset}>
-          <AppContent />
+          {/* Render the new AppGate which controls the loading state */}
+          <AppGate />
         </ErrorBoundary>
       </AntdApp>
     </ConfigProvider>
   );
 };
-
 
 export default App;

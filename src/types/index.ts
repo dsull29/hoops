@@ -1,7 +1,5 @@
 export type GameMode = 'High School' | 'College' | 'Professional';
 export type HighSchoolRole =
-  | 'Freshman Newcomer'
-  | 'Sophomore Contender'
   | 'Junior Varsity Player'
   | 'Varsity Rotation'
   | 'Varsity Starter'
@@ -30,7 +28,7 @@ export type ProfessionalRole =
   | 'Starting Caliber Player'
   | 'Established Star'
   | 'All-Star Level Player'
-  | 'All-League Performer'
+  | 'All-League Player'
   | 'MVP Candidate';
 export type PlayerRole = HighSchoolRole | CollegeRole | ProfessionalRole;
 
@@ -40,7 +38,8 @@ export interface PlayerStats {
   basketballIQ: number;
   charisma: number;
   professionalism: number;
-  energy: number;
+  // FIX: Replaced energy with durability
+  durability: number;
   morale: number;
   skillPoints: number;
 }

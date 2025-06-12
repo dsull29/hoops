@@ -37,8 +37,10 @@ export const useGameStore = create<FullStore>()(
       setCurrentEvent: (event) => set({ currentEvent: event }),
 
       startGame: () => {
+        console.log('[gameStore] Starting new game...');
         const { metaSkillPoints } = get();
         const initialState = gameEngine.startGame(metaSkillPoints);
+        console.log('[gameStore] Initial player created:', initialState.player);
         set({
           ...initialState,
           gamePhase: 'playing',
@@ -165,8 +167,8 @@ export const useGameStore = create<FullStore>()(
         });
       },
 
-      // FIX: Now also resets metaSkillPoints to prevent NaN errors after a crash.
       clearSavedGame: () => {
+        console.log('[gameStore] Clearing all saved game data and resetting state.');
         set({
           player: null,
           currentEvent: null,
@@ -185,6 +187,17 @@ export const useGameStore = create<FullStore>()(
         metaSkillPoints: state.metaSkillPoints,
         metaSkillPointsAtRunStart: state.metaSkillPointsAtRunStart,
       }),
+      onRehydrateStorage: () => {
+        console.log('[gameStore] Hydration has started...');
+        // FIX: The unused 'state' parameter is prefixed with an underscore to satisfy the linter.
+        return (_state, error) => {
+          if (error) {
+            console.error('[gameStore] An error occurred during hydration:', error);
+          } else {
+            console.log('[gameStore] Hydration finished.');
+          }
+        };
+      },
     } as PersistOptions<FullStore, PersistedState>
   )
 );

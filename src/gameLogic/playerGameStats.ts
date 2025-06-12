@@ -1,10 +1,8 @@
 import type { GameMode, GameStatLine, Player, PlayerRole } from '../types';
-import { clamp } from '../utils'; // Assuming clamp is in utils, and constants are accessible
+import { clamp } from '../utils';
 
 const BASE_MINUTES: Record<GameMode, Partial<Record<PlayerRole, number>>> = {
   'High School': {
-    'Freshman Newcomer': 8,
-    'Sophomore Contender': 10,
     'Junior Varsity Player': 14,
     'Varsity Rotation': 18,
     'Varsity Starter': 24,
@@ -23,7 +21,7 @@ const BASE_MINUTES: Record<GameMode, Partial<Record<PlayerRole, number>>> = {
     Starter: 28,
     'Conference Star': 32,
     'All-American Candidate': 34,
-    'Top Draft Prospect': 30, // Usually less than senior stars
+    'Top Draft Prospect': 30,
   },
   Professional: {
     'Undrafted Free Agent': 4,
@@ -35,7 +33,7 @@ const BASE_MINUTES: Record<GameMode, Partial<Record<PlayerRole, number>>> = {
     'Starting Caliber Player': 30,
     'Established Star': 34,
     'All-Star Level Player': 35,
-    'All-League Performer': 36,
+    'All-League Player': 36,
     'MVP Candidate': 37,
   },
 };
@@ -52,7 +50,6 @@ const ATTRIBUTE_BASELINE_EXPECTATION: Record<GameMode, number> = {
 };
 
 const getRoleMultiplier = (gameMode: GameMode, role: PlayerRole): number => {
-  console.log(`Calculating role multiplier for ${role} in ${gameMode}`);
   if (
     role.includes('Star') ||
     role.includes('All-American') ||
@@ -60,33 +57,32 @@ const getRoleMultiplier = (gameMode: GameMode, role: PlayerRole): number => {
     role.includes('All-League') ||
     role.includes('Top Draft Prospect')
   )
-    return 1.4; // Slightly reduced from 1.5
+    return 1.4;
   if (role.includes('Starter') || role.includes('Captain') || role.includes('Conference Star'))
-    return 1.15; // Slightly reduced from 1.2
+    return 1.15;
   if (role.includes('Rotation') || role.includes('Sixth Man') || role.includes('Substitute'))
     return 1.0;
-  if (role.includes('Bench') || role.includes('Practice Squad')) return 0.75; // Slightly increased
-  return 0.65; // Increased for lower roles
+  if (role.includes('Bench') || role.includes('Practice Squad')) return 0.75;
+  return 0.65;
 };
 
 const getGameModeStatScale = (gameMode: GameMode): number => {
   if (gameMode === 'Professional') return 1.0;
-  if (gameMode === 'College') return 0.8; // Slightly increased
-  if (gameMode === 'High School') return 0.7; // FIX: Increased from 0.6
+  if (gameMode === 'College') return 0.8;
+  if (gameMode === 'High School') return 0.7;
   return 0.7;
 };
 
+// FIX: Added the 'export' keyword to make this function available for import in other files.
 export const generatePlayerGameStats = (
-  player: Player,
-  playedHard: boolean
+  player: Player
 ): { statLine: GameStatLine; teamWon: boolean } => {
   const { stats, position, gameMode, currentRole } = player;
   const roleMultiplier = getRoleMultiplier(gameMode, currentRole);
   const modeScale = getGameModeStatScale(gameMode);
-  const energyFactor = Math.max(0.3, stats.energy / 100);
+  const durabilityFactor = 1 + (stats.durability - 50) / 100;
 
-  // --- Minutes Calculation ---
-  let baseMinutesForRole = BASE_MINUTES[gameMode]?.[currentRole] ?? 12; // Default if role not perfectly mapped
+  let baseMinutesForRole = BASE_MINUTES[gameMode]?.[currentRole] ?? 12;
 
   const averageKeyAttributes = (stats.shooting + stats.athleticism + stats.basketballIQ) / 3;
   const modeAttributeBaseline = ATTRIBUTE_BASELINE_EXPECTATION[gameMode];
@@ -104,23 +100,18 @@ export const generatePlayerGameStats = (
   );
   baseMinutesForRole += skillPointsMinuteBonus;
 
-  if (playedHard) baseMinutesForRole *= 1.1;
-
-  let minutes = Math.floor(baseMinutesForRole * energyFactor * (0.9 + Math.random() * 0.2));
+  let minutes = Math.floor(baseMinutesForRole * durabilityFactor * (0.9 + Math.random() * 0.2));
   minutes = clamp(minutes, 0, MAX_GAME_MINUTES[gameMode]);
 
-  // --- Other Stats Generation (FIXED LOGIC) ---
   let points = 0,
     rebounds = 0,
     assists = 0;
 
   if (minutes > 0) {
-    // Base per-minute rates adjusted by game mode scale
     const pointsPerMin = 0.4 * modeScale;
     const reboundsPerMin = 0.25 * modeScale;
     const assistsPerMin = 0.15 * modeScale;
 
-    // Position adjustments
     const posPointFactor = position.includes('Guard') ? 1.1 : position.includes('Center') ? 0.9 : 1;
     const posReboundFactor = position.includes('Center')
       ? 1.2
@@ -133,14 +124,13 @@ export const generatePlayerGameStats = (
       ? 1.1
       : 0.9;
 
-    // Calculate stats based on minutes, skill, and some randomness
     points = Math.floor(
       minutes *
         pointsPerMin *
         posPointFactor *
         (stats.shooting / 50) *
         roleMultiplier *
-        energyFactor *
+        durabilityFactor *
         (0.7 + Math.random() * 0.6)
     );
     rebounds = Math.floor(
@@ -149,7 +139,7 @@ export const generatePlayerGameStats = (
         posReboundFactor *
         (stats.athleticism / 55) *
         roleMultiplier *
-        energyFactor *
+        durabilityFactor *
         (0.7 + Math.random() * 0.6)
     );
     assists = Math.floor(
@@ -158,7 +148,7 @@ export const generatePlayerGameStats = (
         posAssistFactor *
         (stats.basketballIQ / 60) *
         roleMultiplier *
-        energyFactor *
+        durabilityFactor *
         (0.7 + Math.random() * 0.6)
     );
   }
@@ -175,10 +165,9 @@ export const generatePlayerGameStats = (
       resultStatLine.assists * 1.5 +
       resultStatLine.minutes / 2) /
     4;
-  let winChance =
+
+  const winChance =
     0.45 + stats.basketballIQ / 500 + stats.professionalism / 600 + gameImpactScore / 200;
-  if (playedHard && resultStatLine.points > 15) winChance += 0.05;
-  if (stats.energy < 20) winChance -= 0.15;
   const teamWon = Math.random() < clamp(winChance, 0.05, 0.95);
   return { statLine: resultStatLine, teamWon: teamWon };
 };

@@ -2,7 +2,6 @@ import type { CollegeRole, HighSchoolRole, ProfessionalRole } from '../types';
 
 export const MAX_STAT_VALUE = 99;
 export const MIN_STAT_VALUE = 10;
-export const MAX_ENERGY = 100;
 export const MAX_MORALE = 100;
 export const DAYS_PER_SEASON = 20;
 
@@ -11,8 +10,6 @@ export const LOCAL_STORAGE_KEY_META_POINTS = 'HoopsMetaPoints_v1';
 export const LOCAL_STORAGE_KEY_THEME = 'HoopsTheme_v1';
 
 export const HIGH_SCHOOL_ROLES: HighSchoolRole[] = [
-  'Freshman Newcomer',
-  'Sophomore Contender',
   'Junior Varsity Player',
   'Varsity Rotation',
   'Varsity Starter',
@@ -43,7 +40,7 @@ export const PROFESSIONAL_ROLES: ProfessionalRole[] = [
   'Starting Caliber Player',
   'Established Star',
   'All-Star Level Player',
-  'All-League Performer',
+  'All-League Player',
   'MVP Candidate',
 ];
 

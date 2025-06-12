@@ -1,4 +1,4 @@
-import { MAX_ENERGY, MAX_MORALE, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
+import { MAX_MORALE, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import type { GameEvent, Player, PlayerStats } from '../types';
 import { clamp } from '../utils';
 import { generatePlayerGameStats } from './playerGameStats';
@@ -20,19 +20,13 @@ const getDiminishingReturnsGain = (currentStatValue: number, professionalism: nu
   return Math.min(gain, 2);
 };
 
-/**
- * NEW: Automates the result of a standard, non-interactive practice day.
- * This function will be called by the game loop when no other event occurs.
- */
 export const handleAutomatedPracticeDay = (
   player: Player
 ): { updatedPlayer: Player; outcomeMessage: string } => {
   const newStats = { ...player.stats };
   let logMessage = `Day ${player.currentDayInSeason}: A standard day of practice.`;
 
-  // Small chance for a breakthrough in a random stat
   if (Math.random() < 0.4) {
-    // 40% chance of a focused gain
     const statsToImprove: (keyof PlayerStats)[] = ['shooting', 'athleticism', 'basketballIQ'];
     const statToFocus = statsToImprove[Math.floor(Math.random() * statsToImprove.length)];
     const gain = getDiminishingReturnsGain(
@@ -53,18 +47,6 @@ export const handleAutomatedPracticeDay = (
     }
   }
 
-  // Energy cost for the day
-  const energyCost = 15 + Math.floor(Math.random() * 10); // cost between 15-24
-  newStats.energy = clamp(newStats.energy - energyCost, 0, MAX_ENERGY);
-  logMessage += ` Energy -${energyCost}.`;
-
-  // Slight energy recovery if professionalism is high
-  if (player.stats.professionalism > 70) {
-    const recovery = Math.floor(player.stats.professionalism / 20);
-    newStats.energy = clamp(newStats.energy + recovery, 0, MAX_ENERGY);
-    logMessage += ` (Recovered +${recovery} from good habits).`;
-  }
-
   return {
     updatedPlayer: { ...player, stats: newStats },
     outcomeMessage: logMessage,
@@ -76,20 +58,17 @@ export const gameDayEvent = (player: Player, opponent: string): GameEvent => {
     id: 'game_day',
     title: `Game Day vs ${opponent}!`,
     description:
-      "It's time to hit the court. Your energy and preparation will determine your performance.",
+      "It's time to hit the court. Your performance will depend on your skills and morale.",
     isMandatory: true,
     choices: [
       {
         id: 'play_game',
         text: 'Play the Game',
-        description: `Your energy is ${player.stats.energy}. Let's see how you do.`,
+        description: `Morale is at ${player.stats.morale}%. Let's see how you do.`,
         action: (p_action) => {
           const newStats = { ...p_action.stats };
-          const playedHard = p_action.stats.energy > 60;
-          const energyCost = playedHard ? 35 : 25;
-          newStats.energy = clamp(newStats.energy - energyCost, 0, MAX_ENERGY);
 
-          const gamePerformance = generatePlayerGameStats(p_action, playedHard);
+          const gamePerformance = generatePlayerGameStats(p_action);
           const { teamWon } = gamePerformance;
 
           if (teamWon) newStats.morale = clamp(newStats.morale + 10, 0, MAX_MORALE);
@@ -127,11 +106,10 @@ export const minorInjuryEvent: GameEvent = {
           MIN_STAT_VALUE,
           MAX_STAT_VALUE
         );
-        newStats.energy = clamp(newStats.energy - 10, 0, MAX_ENERGY);
         newStats.morale = clamp(newStats.morale - 5, 0, MAX_MORALE);
         return {
           updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `The injury set you back a bit. ${statToHit} -${reduction}, Energy -10, Morale -5.`,
+          outcomeMessage: `The injury set you back a bit. ${statToHit} -${reduction}, Morale -5.`,
         };
       },
     },
