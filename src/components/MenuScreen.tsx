@@ -23,7 +23,7 @@ export const MenuScreen: React.FC = () => {
   return (
     <div style={{ textAlign: 'center', padding: '50px 20px' }}>
       <MenuTitleComp level={1} style={{ marginBottom: 16 }}>
-        Roguelike Basketball Sim
+        Roguelite Basketball Sim
       </MenuTitleComp>
       <MenuParagraphComp style={{ fontSize: '1.2em', maxWidth: 600, margin: '0 auto 24px auto' }}>
         Forge your legacy through High School, College, and the Pros. Each choice shapes your path.

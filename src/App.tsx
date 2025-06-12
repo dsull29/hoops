@@ -1,11 +1,12 @@
 import {
   App as AntdApp,
+  message as antdMessageApi,
   Modal as AntdModal,
+  theme as antdTheme,
   Button,
   ConfigProvider,
+  Space,
   Spin,
-  message as antdMessageApi,
-  theme as antdTheme,
 } from 'antd';
 import type { ThemeConfig } from 'antd/es/config-provider';
 import React from 'react';
@@ -25,10 +26,28 @@ import { useHydration } from './hooks/useHydration';
 import { useGameStore } from './store/gameStore';
 import { useUIStore } from './store/uiStore';
 
+
+/**
+ * NEW: A component for the simulation control buttons.
+ */
+const SimulationControls: React.FC<{ onSimDay: () => void; onSimToNext: () => void; isLoading: boolean }> = ({ onSimDay, onSimToNext, isLoading }) => (
+  <div style={{ padding: '20px', background: '#fafafa', borderRadius: '8px', textAlign: 'center', marginBottom: 24 }}>
+    <Space>
+      <Button type="default" size="large" onClick={onSimDay} disabled={isLoading}>
+        Sim Next Day
+      </Button>
+      <Button type="primary" size="large" onClick={onSimToNext} disabled={isLoading}>
+        Sim to Next Event
+      </Button>
+    </Space>
+  </div>
+);
+
 const AppContent: React.FC = () => {
   useHydration();
 
-  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire } = useGameStore();
+  // Updated to include new sim actions
+  const { gamePhase, player, currentEvent, isLoading, handleChoice, handleRetire, simDay, simToNextEvent } = useGameStore();
   const { isDarkMode, hasLoadedInitialState, setDarkMode } = useUIStore();
   const [modal, contextHolderModal] = AntdModal.useModal();
 
@@ -82,13 +101,13 @@ const AppContent: React.FC = () => {
           }}
         >
           <div>
-            <Spin size='large' tip='Processing...' />
+            <Spin size='large' tip='Simulating...' />
           </div>
         </div>
       )}
       <GameLayout isDarkMode={isDarkMode} onThemeChange={setDarkMode}>
         {gamePhase === 'menu' && <MenuScreen />}
-        {gamePhase === 'playing' && player && currentEvent && (
+        {gamePhase === 'playing' && player && (
           <>
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
               <Button size='small' danger onClick={confirmRetire}>
@@ -97,12 +116,19 @@ const AppContent: React.FC = () => {
             </div>
             <PlayerStatsDisplay player={player} />
             <FiveDaySchedule player={player} />
-            <EventDisplay
-              event={currentEvent}
-              player={player}
-              onChoice={handleChoice}
-              isLoading={isLoading}
-            />
+
+            {/* --- CORE UI CHANGE --- */}
+            {currentEvent ? (
+              <EventDisplay
+                event={currentEvent}
+                player={player}
+                onChoice={handleChoice}
+                isLoading={isLoading}
+              />
+            ) : (
+              <SimulationControls onSimDay={simDay} onSimToNext={simToNextEvent} isLoading={isLoading} />
+            )}
+
             <CareerLogDisplay logEntries={player.careerLog} />
           </>
         )}
@@ -112,6 +138,7 @@ const AppContent: React.FC = () => {
   );
 };
 
+// The main App component remains the same
 const App: React.FC = () => {
   const isDarkMode = useUIStore((state) => state.isDarkMode);
   const antdThemeConfig: ThemeConfig = {
@@ -122,10 +149,7 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
-    // This function will be called when the user clicks the "Try Again" button.
-    // We can clear the potentially corrupted saved game state.
     useGameStore.getState().clearSavedGame();
-    // And then reload the page to start fresh.
     window.location.reload();
   };
 
@@ -139,5 +163,6 @@ const App: React.FC = () => {
     </ConfigProvider>
   );
 };
+
 
 export default App;

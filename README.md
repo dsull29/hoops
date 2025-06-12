@@ -1,6 +1,6 @@
-# Hoops - A Roguelike Basketball Career Sim
+# Hoops - A Roguelite Basketball Career Sim
 
-"Hoops" is an immersive, text-based roguelike simulation game where you navigate the career of a basketball player from high school freshman to professional legend. Built with React, TypeScript, and Vite, this project leverages modern web technologies to create a dynamic and engaging player experience.
+"Hoops" is an immersive, text-based roguelite simulation game where you navigate the career of a basketball player from high school freshman to professional legend. Built with React, TypeScript, and Vite, this project leverages modern web technologies to create a dynamic and engaging player experience.
 
 This project is based on a minimal setup template for React with HMR and ESLint rules.
 
@@ -10,7 +10,7 @@ This project is based on a minimal setup template for React with HMR and ESLint 
 * **Dynamic Event System**: Encounter a wide range of contextual events that shape your player's journey. From `Locker Room Pranks` as a freshman to dealing with pro scouts in college, your choices matter.
 * **Daily Player Development**: Make strategic decisions every day. Choose to `Train Shooting`, `Train Athleticism`, `Study Film`, or `Rest & Recover` to build your player's stats.
 * **Game Simulation**: Experience game days with outcomes based on your player's stats, role, and energy levels. Performance is tracked with detailed stat lines including points, rebounds, and assists.
-* **Persistent Legacy System**: When a player's career ends, they leave behind `Legacy Points`. These points give your next created player a head start, adding a roguelike element to the game.
+* **Persistent Legacy System**: When a player's career ends, they leave behind `Legacy Points`. These points give your next created player a head start, adding a roguelite element to the game.
 * **Modern UI**: Built with Ant Design, featuring a clean, responsive layout, and a toggleable Light/Dark mode.
 * **Client-Side Storage**: Game state is persisted in your browser using IndexedDB, allowing you to continue your career later.
 

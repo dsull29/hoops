@@ -1,5 +1,5 @@
 import { MAX_ENERGY, MAX_MORALE, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
-import type { Choice, GameEvent, Player, PlayerStats } from '../types';
+import type { GameEvent, Player, PlayerStats } from '../types';
 import { clamp } from '../utils';
 import { generatePlayerGameStats } from './playerGameStats';
 
@@ -20,94 +20,54 @@ const getDiminishingReturnsGain = (currentStatValue: number, professionalism: nu
   return Math.min(gain, 2);
 };
 
-export const createDailyChoiceEvent = (player: Player): GameEvent => {
-  const choices: Choice[] = [
-    {
-      id: 'train_shooting',
-      text: 'Train Shooting',
-      description: 'Hit the gym to work on your jumper.',
-      cost: { stat: 'energy', amount: 20 },
-      action: (p) => {
-        const newStats = { ...p.stats };
-        const gain = getDiminishingReturnsGain(newStats.shooting, newStats.professionalism);
-        if (gain > 0)
-          newStats.shooting = clamp(newStats.shooting + gain, MIN_STAT_VALUE, MAX_STAT_VALUE);
-        newStats.energy = clamp(newStats.energy - 20, 0, MAX_ENERGY);
-        const gainMsg = gain > 0 ? `Shooting +${gain}.` : 'No improvement this time.';
-        return {
-          updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `Focused on shooting. ${gainMsg} Energy -20.`,
-        };
-      },
-      disabled: (p) => p.stats.energy < 20,
-    },
-    {
-      id: 'train_athleticism',
-      text: 'Train Athleticism',
-      description: 'Conditioning and strength training.',
-      cost: { stat: 'energy', amount: 25 },
-      action: (p) => {
-        const newStats = { ...p.stats };
-        const gain = getDiminishingReturnsGain(newStats.athleticism, newStats.professionalism);
-        if (gain > 0)
-          newStats.athleticism = clamp(newStats.athleticism + gain, MIN_STAT_VALUE, MAX_STAT_VALUE);
-        newStats.energy = clamp(newStats.energy - 25, 0, MAX_ENERGY);
-        const gainMsg = gain > 0 ? `Athleticism +${gain}.` : 'No improvement this time.';
-        return {
-          updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `Pushed hard on athleticism. ${gainMsg} Energy -25.`,
-        };
-      },
-      disabled: (p) => p.stats.energy < 25,
-    },
-    {
-      id: 'study_film',
-      text: 'Study Film',
-      description: 'Analyze game footage to improve your BBIQ.',
-      cost: { stat: 'energy', amount: 10 },
-      action: (p) => {
-        const newStats = { ...p.stats };
-        const gain = getDiminishingReturnsGain(newStats.basketballIQ, newStats.professionalism);
-        if (gain > 0)
-          newStats.basketballIQ = clamp(
-            newStats.basketballIQ + gain,
-            MIN_STAT_VALUE,
-            MAX_STAT_VALUE
-          );
-        newStats.energy = clamp(newStats.energy - 10, 0, MAX_ENERGY);
-        const gainMsg = gain > 0 ? `BBIQ +${gain}.` : 'No new insights this time.';
-        return {
-          updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: `Spent time studying film. ${gainMsg} Energy -10.`,
-        };
-      },
-      disabled: (p) => p.stats.energy < 10,
-    },
-    {
-      id: 'rest',
-      text: 'Rest & Recover',
-      description: 'Take a day off to recover energy.',
-      action: (p) => {
-        const newStats = { ...p.stats };
-        newStats.energy = clamp(
-          newStats.energy + 30 + Math.floor(Math.random() * 11),
-          0,
-          MAX_ENERGY
-        );
-        newStats.morale = clamp(newStats.morale + 5, 0, MAX_MORALE);
-        return {
-          updatedPlayer: { ...p, stats: newStats },
-          outcomeMessage: 'Took a much-needed rest day. Energy and Morale increased.',
-        };
-      },
-    },
-  ];
+/**
+ * NEW: Automates the result of a standard, non-interactive practice day.
+ * This function will be called by the game loop when no other event occurs.
+ */
+export const handleAutomatedPracticeDay = (
+  player: Player
+): { updatedPlayer: Player; outcomeMessage: string } => {
+  const newStats = { ...player.stats };
+  let logMessage = `Day ${player.currentDayInSeason}: A standard day of practice.`;
+
+  // Small chance for a breakthrough in a random stat
+  if (Math.random() < 0.4) {
+    // 40% chance of a focused gain
+    const statsToImprove: (keyof PlayerStats)[] = ['shooting', 'athleticism', 'basketballIQ'];
+    const statToFocus = statsToImprove[Math.floor(Math.random() * statsToImprove.length)];
+    const gain = getDiminishingReturnsGain(
+      newStats[statToFocus] as number,
+      newStats.professionalism
+    );
+
+    if (gain > 0) {
+      newStats[statToFocus] = clamp(
+        (newStats[statToFocus] as number) + gain,
+        MIN_STAT_VALUE,
+        MAX_STAT_VALUE
+      );
+      logMessage += ` You made progress in ${statToFocus.replace(
+        'basketballIQ',
+        'BBIQ'
+      )} (+${gain}).`;
+    }
+  }
+
+  // Energy cost for the day
+  const energyCost = 15 + Math.floor(Math.random() * 10); // cost between 15-24
+  newStats.energy = clamp(newStats.energy - energyCost, 0, MAX_ENERGY);
+  logMessage += ` Energy -${energyCost}.`;
+
+  // Slight energy recovery if professionalism is high
+  if (player.stats.professionalism > 70) {
+    const recovery = Math.floor(player.stats.professionalism / 20);
+    newStats.energy = clamp(newStats.energy + recovery, 0, MAX_ENERGY);
+    logMessage += ` (Recovered +${recovery} from good habits).`;
+  }
+
   return {
-    id: 'daily_choices',
-    title: `Day ${player.currentDayInSeason} Focus`,
-    description: `What's the plan for today?`,
-    choices: choices,
-    type: 'daily',
+    updatedPlayer: { ...player, stats: newStats },
+    outcomeMessage: logMessage,
   };
 };
 

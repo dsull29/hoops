@@ -12,22 +12,18 @@ import { calculatePerformanceScore } from '../utils';
 import { getModeRoleContextualEvent } from './contextualEvents/contextualEventRunner';
 import {
   agentMeetingEvent,
-  createDailyChoiceEvent,
   gameDayEvent,
+  handleAutomatedPracticeDay,
   minorInjuryEvent,
 } from './eventDefinitions';
 import { generateSeasonSchedule } from './seasonLogic';
 
+// The evaluatePlayerProgress function remains the same.
 interface EvaluatePlayerProgressResult {
   newRole: PlayerRole;
   newMode: GameMode;
   logMessages: string[];
 }
-
-/**
- * Evaluates the player's current performance to determine their appropriate role and game mode.
- * This is used at the end of a season for major progression and mid-season for promotions.
- */
 const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult => {
   const { currentRole, gameMode, age, stats, currentSeasonInMode } = player;
   const logMessages: string[] = [];
@@ -35,8 +31,6 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
   let newMode = gameMode;
   let newRole: PlayerRole = currentRole;
 
-  // --- End-of-Career Mode Changes ---
-  // This logic only triggers when a player meets the graduation/age requirements.
   if (gameMode === 'High School' && currentSeasonInMode >= HIGH_SCHOOL_MAX_SEASONS) {
     newMode = 'College';
     newRole = COLLEGE_ROLES[0];
@@ -66,10 +60,7 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
     currentRoleIndex = 0;
   }
 
-  // --- Tier-Based Role Calculation ---
   let targetRoleIndex = currentRoleIndex;
-
-  // Determine the target role based on performance score tiers
   if (newMode === 'High School') {
     if (performanceScore > 200)
       targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('All-American Prospect'));
@@ -111,11 +102,9 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
       targetRoleIndex = Math.max(targetRoleIndex, roles.indexOf('Rotation Contributor'));
   }
 
-  // If the target role is a promotion, set the new role.
   if (targetRoleIndex > currentRoleIndex) {
     newRole = roles[targetRoleIndex];
   } else {
-    // If no tier-based promotion, check for demotion (only at end of season)
     const demotionThreshold = 70 + currentRoleIndex * 10;
     if (
       player.currentDayInSeason > player.schedule.schedule.length &&
@@ -131,164 +120,157 @@ const evaluatePlayerProgress = (player: Player): EvaluatePlayerProgressResult =>
   return { newRole, newMode, logMessages };
 };
 
-export interface ProcessDayResult {
+export interface AdvanceDayResult {
   nextPlayerState: Player;
   nextEvent: GameEvent | null;
   isGameOver: boolean;
   gameOverMessage?: string;
-  eventTriggerMessage?: string;
 }
 
-export const processDay = (
-  currentPlayer: Player,
-  choiceOutcomeImmediateEvent: GameEvent | null
-): ProcessDayResult => {
+export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
   const nextPlayerState = { ...currentPlayer };
-  let nextEvent: GameEvent | null = choiceOutcomeImmediateEvent;
+  let nextEvent: GameEvent | null = null;
   let isGameOver = false;
   let gameOverMessage: string | undefined;
-  let eventTriggerMessage: string | undefined;
 
-  // FIX: Define roles based on the current player's game mode to make it available in this scope
-  const roles: readonly PlayerRole[] =
-    nextPlayerState.gameMode === 'High School'
-      ? HIGH_SCHOOL_ROLES
-      : nextPlayerState.gameMode === 'College'
-      ? COLLEGE_ROLES
-      : PROFESSIONAL_ROLES;
-
-  if (!nextEvent) {
-    nextPlayerState.totalDaysPlayed += 1;
-    nextPlayerState.currentDayInSeason += 1;
-
-    // --- End of Season Progression ---
-    if (nextPlayerState.currentDayInSeason > nextPlayerState.schedule.schedule.length) {
-      nextPlayerState.currentDayInSeason = 1;
-      nextPlayerState.currentSeason += 1;
-      nextPlayerState.age += 1;
-      nextPlayerState.stats.energy = MAX_ENERGY;
-
-      const progressResult = evaluatePlayerProgress(nextPlayerState);
-
-      // Handle mode change
-      if (nextPlayerState.gameMode !== progressResult.newMode) {
-        nextPlayerState.currentSeasonInMode = 1;
-        nextPlayerState.gameMode = progressResult.newMode;
-      } else {
-        nextPlayerState.currentSeasonInMode += 1;
-      }
-
-      // Handle role change and logging
-      if (nextPlayerState.currentRole !== progressResult.newRole) {
-        progressResult.logMessages.push(
-          `Your performance has earned you a new role: ${progressResult.newRole}!`
-        );
-      }
-      nextPlayerState.currentRole = progressResult.newRole;
-      nextPlayerState.careerLog.push(...progressResult.logMessages);
-
-      nextPlayerState.schedule = generateSeasonSchedule(
-        nextPlayerState.gameMode,
-        nextPlayerState.currentSeason
-      );
-      eventTriggerMessage = `--- End of Season ${nextPlayerState.currentSeason - 1}. Age: ${
-        nextPlayerState.age
-      }. You feel rested for the new season! ---`;
-    }
-    // --- NEW: Monthly check for in-season promotion ---
-    else if (nextPlayerState.currentDayInSeason % 30 === 0) {
-      const originalRole = nextPlayerState.currentRole;
-      const midSeasonEval = evaluatePlayerProgress(nextPlayerState);
-
-      const originalRoleIndex = roles.indexOf(originalRole);
-      const newRoleIndex = roles.indexOf(midSeasonEval.newRole);
-
-      if (midSeasonEval.newRole !== originalRole && newRoleIndex > originalRoleIndex) {
-        nextPlayerState.currentRole = midSeasonEval.newRole;
-        const logMessage = `Your hard work is paying off! You've been promoted to: ${midSeasonEval.newRole}!`;
-        nextPlayerState.careerLog.push(logMessage);
-        // Trigger a special event to announce the promotion
-        nextEvent = {
-          id: 'in_season_promotion',
-          title: 'In-Season Promotion!',
-          description: logMessage,
-          choices: [
-            {
-              id: 'acknowledge_promotion',
-              text: "Let's go!",
-              action: (p) => ({
-                updatedPlayer: p,
-                outcomeMessage: 'The coaches have recognized your improvement.',
-              }),
-            },
-          ],
-          isMandatory: true,
-        };
-      }
-    }
-
-    // Determine the main event for the day, if a promotion event wasn't just created
-    if (!nextEvent) {
-      const today = nextPlayerState.schedule.schedule.find(
-        (item) => item.day === nextPlayerState.currentDayInSeason
-      );
-      if (today) {
-        if (today.type === 'Game' || today.type === 'Playoffs' || today.type === 'Championship') {
-          if (
-            nextPlayerState.schedule.playoffEliminated &&
-            (today.type === 'Playoffs' || today.type === 'Championship')
-          ) {
-            nextPlayerState.careerLog.push(
-              `Day ${today.day}: Skipped playoff game due to prior elimination.`
-            );
-            nextEvent = createDailyChoiceEvent(nextPlayerState);
-          } else {
-            nextEvent = gameDayEvent(nextPlayerState, today.opponent || 'Rival');
-          }
-        } else {
-          // Logic for non-game day events (practice, injury, etc.)
-          if (Math.random() < 0.05 && nextPlayerState.stats.energy < 40) {
-            nextEvent = minorInjuryEvent;
-          } else if (
-            nextPlayerState.totalDaysPlayed > 0 &&
-            nextPlayerState.totalDaysPlayed % 45 === 0
-          ) {
-            const agentEvent = agentMeetingEvent(nextPlayerState);
-            if (agentEvent) {
-              nextEvent = agentEvent;
-            } else {
-              nextEvent = createDailyChoiceEvent(nextPlayerState);
-            }
-          } else if (Math.random() < 0.15) {
-            const contextualEvent = getModeRoleContextualEvent(nextPlayerState);
-            if (contextualEvent) {
-              nextEvent = contextualEvent;
-            } else {
-              nextEvent = createDailyChoiceEvent(nextPlayerState);
-            }
-          } else {
-            nextEvent = createDailyChoiceEvent(nextPlayerState);
-          }
-        }
-      } else {
-        // Fallback if today's schedule item isn't found for some reason
-        nextEvent = createDailyChoiceEvent(nextPlayerState);
-      }
-    }
-  }
-
-  // --- Career End Check ---
+  // --- Career End Check (Age) ---
   if (nextPlayerState.age > 40 && nextPlayerState.gameMode === 'Professional') {
     isGameOver = true;
     gameOverMessage = "After a long and storied career, it's time to retire.";
+    nextPlayerState.careerOver = true;
+    nextPlayerState.careerLog.push(`--- CAREER OVER: ${gameOverMessage} ---`);
+    return { nextPlayerState, nextEvent: null, isGameOver, gameOverMessage };
   }
 
-  if (isGameOver) {
-    nextPlayerState.careerOver = true;
-    if (gameOverMessage) {
-      nextPlayerState.careerLog.push(`--- CAREER OVER: ${gameOverMessage} ---`);
+  // --- Move to next day ---
+  nextPlayerState.totalDaysPlayed += 1;
+  nextPlayerState.currentDayInSeason += 1;
+
+  // --- End of Season Progression ---
+  if (nextPlayerState.currentDayInSeason > nextPlayerState.schedule.schedule.length) {
+    nextPlayerState.currentDayInSeason = 1;
+    nextPlayerState.currentSeason += 1;
+    nextPlayerState.age += 1;
+    nextPlayerState.stats.energy = MAX_ENERGY;
+
+    const progressResult = evaluatePlayerProgress(nextPlayerState);
+
+    if (nextPlayerState.gameMode !== progressResult.newMode) {
+      nextPlayerState.currentSeasonInMode = 1;
+      nextPlayerState.gameMode = progressResult.newMode;
+    } else {
+      nextPlayerState.currentSeasonInMode += 1;
+    }
+
+    if (nextPlayerState.currentRole !== progressResult.newRole) {
+      progressResult.logMessages.push(
+        `Your performance has earned you a new role: ${progressResult.newRole}!`
+      );
+    }
+    nextPlayerState.currentRole = progressResult.newRole;
+    nextPlayerState.careerLog.push(...progressResult.logMessages);
+
+    nextPlayerState.schedule = generateSeasonSchedule(
+      nextPlayerState.gameMode,
+      nextPlayerState.currentSeason
+    );
+
+    nextEvent = {
+      id: 'new_season_started',
+      title: `Welcome to a New Season!`,
+      description: `It's the start of year ${nextPlayerState.currentSeason - 1} (Age: ${
+        nextPlayerState.age
+      }). You feel rested and ready to go. Your new role is ${nextPlayerState.currentRole}.`,
+      isMandatory: true,
+      choices: [
+        {
+          id: 'continue',
+          text: "Let's get to it.",
+          action: (p) => ({
+            updatedPlayer: p,
+            outcomeMessage: 'A new season of challenges and opportunities awaits.',
+          }),
+        },
+      ],
+    };
+    return { nextPlayerState, nextEvent, isGameOver, gameOverMessage };
+  }
+
+  // --- Daily Event Check ---
+  const today = nextPlayerState.schedule.schedule.find(
+    (item) => item.day === nextPlayerState.currentDayInSeason
+  );
+
+  if (today) {
+    if (today.type === 'Game' || today.type === 'Playoffs' || today.type === 'Championship') {
+      if (
+        nextPlayerState.schedule.playoffEliminated &&
+        (today.type === 'Playoffs' || today.type === 'Championship')
+      ) {
+        nextPlayerState.careerLog.push(
+          `Day ${today.day}: Skipped playoff game due to prior elimination.`
+        );
+      } else {
+        nextEvent = gameDayEvent(nextPlayerState, today.opponent || 'Rival');
+      }
+    } else {
+      // It's a non-game day, so check for random events
+      // RESTORED: Monthly check for in-season promotion
+      if (nextPlayerState.currentDayInSeason % 30 === 0) {
+        const roles: readonly PlayerRole[] =
+          nextPlayerState.gameMode === 'High School'
+            ? HIGH_SCHOOL_ROLES
+            : nextPlayerState.gameMode === 'College'
+            ? COLLEGE_ROLES
+            : PROFESSIONAL_ROLES;
+        const originalRole = nextPlayerState.currentRole;
+        const midSeasonEval = evaluatePlayerProgress(nextPlayerState);
+        const originalRoleIndex = roles.indexOf(originalRole);
+        const newRoleIndex = roles.indexOf(midSeasonEval.newRole);
+
+        if (midSeasonEval.newRole !== originalRole && newRoleIndex > originalRoleIndex) {
+          nextPlayerState.currentRole = midSeasonEval.newRole;
+          const logMessage = `Your hard work is paying off! You've been promoted to: ${midSeasonEval.newRole}!`;
+          nextPlayerState.careerLog.push(logMessage);
+          nextEvent = {
+            id: 'in_season_promotion',
+            title: 'In-Season Promotion!',
+            description: logMessage,
+            choices: [
+              {
+                id: 'acknowledge_promotion',
+                text: "Let's go!",
+                action: (p) => ({
+                  updatedPlayer: p,
+                  outcomeMessage: 'The coaches have recognized your improvement.',
+                }),
+              },
+            ],
+            isMandatory: true,
+          };
+        }
+      }
+      // If no promotion, check for other random events
+      if (!nextEvent) {
+        if (Math.random() < 0.05 && nextPlayerState.stats.energy < 40) {
+          nextEvent = minorInjuryEvent;
+        } else if (
+          nextPlayerState.totalDaysPlayed > 0 &&
+          nextPlayerState.totalDaysPlayed % 45 === 0
+        ) {
+          nextEvent = agentMeetingEvent(nextPlayerState);
+        } else if (Math.random() < 0.15) {
+          nextEvent = getModeRoleContextualEvent(nextPlayerState);
+        }
+      }
     }
   }
 
-  return { nextPlayerState, nextEvent, isGameOver, gameOverMessage, eventTriggerMessage };
+  if (!nextEvent) {
+    const { updatedPlayer, outcomeMessage } = handleAutomatedPracticeDay(nextPlayerState);
+    nextPlayerState.stats = updatedPlayer.stats;
+    nextPlayerState.careerLog.push(outcomeMessage);
+  }
+
+  return { nextPlayerState, nextEvent, isGameOver, gameOverMessage };
 };

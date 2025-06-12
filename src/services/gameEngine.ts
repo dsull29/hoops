@@ -1,19 +1,46 @@
 import {
-  createDailyChoiceEvent,
+  advanceDay,
   createInitialPlayer,
   processPlayerRetirement as logicProcessPlayerRetirement,
-  processDay,
 } from '../gameLogic';
 import type { Choice, GameEvent, Player } from '../types';
+
+interface SimulationResult {
+  player: Player;
+  event: GameEvent | null;
+  isGameOver: boolean;
+  gameOverMessage?: string;
+}
 
 export const gameEngine = {
   startGame(metaSkillPoints: number) {
     const player = createInitialPlayer(metaSkillPoints);
     return {
       player,
-      currentEvent: createDailyChoiceEvent(player),
+      currentEvent: null,
       isLoading: false,
     };
+  },
+
+  simulateDays(currentPlayer: Player, maxDays: number = 1): SimulationResult {
+    let playerState = { ...currentPlayer };
+    let dayCounter = 0;
+
+    while (dayCounter < maxDays) {
+      const { nextPlayerState, nextEvent, isGameOver, gameOverMessage } = advanceDay(playerState);
+      playerState = nextPlayerState;
+      dayCounter++;
+
+      if (isGameOver) {
+        return { player: playerState, event: null, isGameOver: true, gameOverMessage };
+      }
+
+      if (nextEvent) {
+        return { player: playerState, event: nextEvent, isGameOver: false };
+      }
+    }
+
+    return { player: playerState, event: null, isGameOver: false };
   },
 
   processPlayerChoice(
@@ -24,25 +51,25 @@ export const gameEngine = {
     nextEvent: GameEvent | null;
     isGameOver: boolean;
     outcomeMessage: string;
-    eventTriggerMessage?: string;
   } {
-    const { updatedPlayer, outcomeMessage, immediateEvent, gamePerformance } =
-      choice.action(currentPlayer);
+    const { updatedPlayer, outcomeMessage, gamePerformance } = choice.action(currentPlayer);
 
     let processedOutcomeMessage = outcomeMessage;
     const playerAfterChoiceAction = { ...updatedPlayer };
 
     if (gamePerformance) {
       const { statLine, teamWon } = gamePerformance;
+      // FIX: Find the current day's schedule item to correctly check its type
+      const today = playerAfterChoiceAction.schedule.schedule.find(
+        (item) => item.day === playerAfterChoiceAction.currentDayInSeason
+      );
 
-      // FIX: Update logic to work with the daily schedule structure
       const scheduleWithResult = playerAfterChoiceAction.schedule.schedule.map((item) => {
         if (item.day === playerAfterChoiceAction.currentDayInSeason) {
           return { ...item, gameResult: { playerStats: statLine, teamWon }, isCompleted: true };
         }
         return item;
       });
-
       playerAfterChoiceAction.schedule = {
         ...playerAfterChoiceAction.schedule,
         schedule: scheduleWithResult,
@@ -52,31 +79,26 @@ export const gameEngine = {
         losses: !teamWon
           ? playerAfterChoiceAction.schedule.losses + 1
           : playerAfterChoiceAction.schedule.losses,
-        // Mark the player as eliminated from playoffs on a loss in the 'Playoffs' or 'Championship'
         playoffEliminated:
-          !teamWon && (choice.id === 'Playoffs' || choice.id === 'Championship')
+          !teamWon && today && (today.type === 'Playoffs' || today.type === 'Championship')
             ? true
             : playerAfterChoiceAction.schedule.playoffEliminated,
       };
-
       const resultString = teamWon ? 'Your team WON!' : 'Your team LOST.';
       const statString = `In ${statLine.minutes}m, you had ${statLine.points} PTS, ${statLine.rebounds} REB, ${statLine.assists} AST.`;
       processedOutcomeMessage = `${outcomeMessage} ${statString} ${resultString}`;
     }
 
-    const newLogEntry = processedOutcomeMessage;
-    const newLog = [...playerAfterChoiceAction.careerLog, newLogEntry];
-    playerAfterChoiceAction.careerLog = newLog;
+    playerAfterChoiceAction.careerLog.push(processedOutcomeMessage);
 
-    // FIX: Call processDay instead of processWeek
-    const turnResult = processDay(playerAfterChoiceAction, immediateEvent ?? null);
+    // After a choice, immediately try to advance to the next day/event
+    const turnResult = this.simulateDays(playerAfterChoiceAction, 1);
 
     return {
-      nextPlayerState: turnResult.nextPlayerState,
-      nextEvent: turnResult.nextEvent,
+      nextPlayerState: turnResult.player,
+      nextEvent: turnResult.event,
       isGameOver: turnResult.isGameOver,
       outcomeMessage: turnResult.gameOverMessage || processedOutcomeMessage,
-      eventTriggerMessage: turnResult.eventTriggerMessage,
     };
   },
 
@@ -86,10 +108,5 @@ export const gameEngine = {
     retirementMessage?: string
   ) {
     return logicProcessPlayerRetirement(player, metaSkillPointsAtRunStart, retirementMessage);
-  },
-
-  // FIX: Rename to regenerateDailyEvent and use the correct function
-  regenerateDailyEvent(player: Player): GameEvent {
-    return createDailyChoiceEvent(player);
   },
 };
