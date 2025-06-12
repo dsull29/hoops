@@ -18,17 +18,38 @@ interface StatDataItem {
   Morale?: number | string;
 }
 
+// FIX: Added interface for Season Totals table
+interface SeasonTotalDataItem {
+  key: string;
+  MIN: number;
+  PTS: number;
+  REB: number;
+  AST: number;
+}
+
 export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }) => {
-  // Defensive check in case the player prop is not yet loaded.
   if (!player) {
     return <Card>Loading player data...</Card>;
   }
 
-  // Use default fallbacks to prevent crashes if data is missing.
   const stats = player.stats || {};
-  const schedule = player.schedule || { wins: 0, losses: 0 };
+  const schedule = player.schedule || { wins: 0, losses: 0, schedule: [] };
 
-  const columns: ColumnsType<StatDataItem> = [
+  // FIX: Calculate season totals
+  const seasonTotals = schedule.schedule.reduce(
+    (acc, day) => {
+      if (day.gameResult) {
+        acc.MIN += day.gameResult.playerStats.minutes;
+        acc.PTS += day.gameResult.playerStats.points;
+        acc.REB += day.gameResult.playerStats.rebounds;
+        acc.AST += day.gameResult.playerStats.assists;
+      }
+      return acc;
+    },
+    { MIN: 0, PTS: 0, REB: 0, AST: 0 }
+  );
+
+  const statColumns: ColumnsType<StatDataItem> = [
     { title: 'Shooting', dataIndex: 'Shooting', key: 'Shooting', align: 'center' },
     { title: 'Athleticism', dataIndex: 'Athleticism', key: 'Athleticism', align: 'center' },
     { title: 'Basketball IQ', dataIndex: 'Basketball IQ', key: 'Basketball IQ', align: 'center' },
@@ -36,16 +57,26 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
     { title: 'Morale', dataIndex: 'Morale', key: 'Morale', align: 'center' },
   ];
 
-  const data: StatDataItem[] = [
+  const statData: StatDataItem[] = [
     {
       key: 'values',
       Shooting: stats.shooting ?? 'N/A',
       Athleticism: stats.athleticism ?? 'N/A',
       'Basketball IQ': stats.basketballIQ ?? 'N/A',
-      Energy: stats.energy ?? 'N/A',
-      Morale: stats.morale ?? 'N/A',
+      Energy: `${stats.energy ?? 'N/A'}%`,
+      Morale: `${stats.morale ?? 'N/A'}%`,
     },
   ];
+
+  // FIX: Added columns and data for season totals
+  const seasonTotalColumns: ColumnsType<SeasonTotalDataItem> = [
+    { title: 'MIN', dataIndex: 'MIN', key: 'MIN', align: 'center' },
+    { title: 'PTS', dataIndex: 'PTS', key: 'PTS', align: 'center' },
+    { title: 'REB', dataIndex: 'REB', key: 'REB', align: 'center' },
+    { title: 'AST', dataIndex: 'AST', key: 'AST', align: 'center' },
+  ];
+
+  const seasonTotalData: SeasonTotalDataItem[] = [{ key: 'totals', ...seasonTotals }];
 
   return (
     <Card
@@ -78,9 +109,7 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
             {schedule.losses}
           </Text>
         </Descriptions.Item>
-        {/* FIX: Removed the extra career text */}
         <Descriptions.Item label='Season'>{player.currentSeasonInMode || 1}</Descriptions.Item>
-        {/* FIX: Removed the extra total days text */}
         <Descriptions.Item label='Day' span={2}>
           {player.currentDayInSeason || 1}
         </Descriptions.Item>
@@ -95,9 +124,25 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({ player }
         )}
       </Descriptions>
 
+      <PlayerTitle level={5} style={{ textAlign: 'center', fontSize: '1em', marginBottom: 8 }}>
+        Player Attributes
+      </PlayerTitle>
       <Table
-        columns={columns}
-        dataSource={data}
+        columns={statColumns}
+        dataSource={statData}
+        pagination={false}
+        size='small'
+        bordered
+        style={{ marginBottom: 12 }}
+      />
+
+      {/* FIX: Added Season Totals table */}
+      <PlayerTitle level={5} style={{ textAlign: 'center', fontSize: '1em', marginBottom: 8 }}>
+        Season Totals
+      </PlayerTitle>
+      <Table
+        columns={seasonTotalColumns}
+        dataSource={seasonTotalData}
         pagination={false}
         size='small'
         bordered

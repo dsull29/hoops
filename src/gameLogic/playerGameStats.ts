@@ -72,7 +72,7 @@ const getRoleMultiplier = (gameMode: GameMode, role: PlayerRole): number => {
 const getGameModeStatScale = (gameMode: GameMode): number => {
   if (gameMode === 'Professional') return 1.0;
   if (gameMode === 'College') return 0.8; // Slightly increased
-  if (gameMode === 'High School') return 0.6; // Slightly increased
+  if (gameMode === 'High School') return 0.7; // FIX: Increased from 0.6
   return 0.7;
 };
 
@@ -88,11 +88,9 @@ export const generatePlayerGameStats = (
   // --- Minutes Calculation ---
   let baseMinutesForRole = BASE_MINUTES[gameMode]?.[currentRole] ?? 12; // Default if role not perfectly mapped
 
-  // 1. Attribute-based "Talent Recognition" bonus for minutes
   const averageKeyAttributes = (stats.shooting + stats.athleticism + stats.basketballIQ) / 3;
   const modeAttributeBaseline = ATTRIBUTE_BASELINE_EXPECTATION[gameMode];
   const attributeDifference = averageKeyAttributes - modeAttributeBaseline;
-  // For every 5 points above baseline, add 1 minute, capped at a significant portion of role minutes. Max bonus ~8-10 mins.
   const attributeMinuteBonus = clamp(
     Math.floor(attributeDifference / 4),
     0,
@@ -100,81 +98,86 @@ export const generatePlayerGameStats = (
   );
   baseMinutesForRole += attributeMinuteBonus;
 
-  // 2. Skill points (legacy/talent) influence on minutes
   const skillPointsMinuteBonus = Math.min(
     gameMode === 'High School' ? 4 : gameMode === 'College' ? 6 : 8,
     Math.floor(stats.skillPoints / 150)
-  ); // More impact, higher cap
+  );
   baseMinutesForRole += skillPointsMinuteBonus;
 
   if (playedHard) baseMinutesForRole *= 1.1;
 
-  let minutes = Math.floor(baseMinutesForRole * energyFactor * (0.9 + Math.random() * 0.2)); // Tighter randomness: 0.9 to 1.1
+  let minutes = Math.floor(baseMinutesForRole * energyFactor * (0.9 + Math.random() * 0.2));
   minutes = clamp(minutes, 0, MAX_GAME_MINUTES[gameMode]);
 
-  // --- Other Stats Generation ---
-  const opportunityScale = minutes > 0 ? minutes / MAX_GAME_MINUTES[gameMode] : 0; // Scale by actual minutes opportunity
-
-  const baseShootingPotential =
-    (stats.shooting / 100) * roleMultiplier * modeScale * energyFactor * opportunityScale;
-  const baseAthleticismPotential =
-    (stats.athleticism / 100) * roleMultiplier * modeScale * energyFactor * opportunityScale;
-  const baseIqPotential =
-    (stats.basketballIQ / 100) * roleMultiplier * modeScale * energyFactor * opportunityScale;
-
+  // --- Other Stats Generation (FIXED LOGIC) ---
   let points = 0,
     rebounds = 0,
     assists = 0;
 
-  // (Stat generation formulas from previous version, now benefiting from better `opportunityScale`)
-  let maxPoints = 0;
-  if (position.includes('Guard')) maxPoints = 30 + baseShootingPotential * 25;
-  else if (position.includes('Forward')) maxPoints = 25 + baseShootingPotential * 20;
-  else if (position.includes('Center')) maxPoints = 22 + baseShootingPotential * 18;
-  maxPoints = Math.min(Math.max(5, maxPoints), 60);
-  points = Math.floor(Math.random() * (baseShootingPotential * maxPoints));
-  if (playedHard) points = Math.floor(points * (1.05 + Math.random() * 0.3));
-  let maxRebounds = 0;
-  if (position.includes('Center')) maxRebounds = 15 + baseAthleticismPotential * 12;
-  else if (position.includes('Forward')) maxRebounds = 12 + baseAthleticismPotential * 10;
-  else if (position.includes('Guard')) maxRebounds = 8 + baseAthleticismPotential * 6;
-  maxRebounds = Math.min(Math.max(2, maxRebounds), 25);
-  rebounds = Math.floor(Math.random() * (baseAthleticismPotential * maxRebounds));
-  if (playedHard) rebounds = Math.floor(rebounds * (1.05 + Math.random() * 0.25));
-  let maxAssists = 0;
-  if (position.includes('Point Guard')) maxAssists = 12 + baseIqPotential * 12;
-  else if (position.includes('Guard')) maxAssists = 10 + baseIqPotential * 8;
-  else if (position.includes('Forward')) maxAssists = 8 + baseIqPotential * 6;
-  else if (position.includes('Center')) maxAssists = 5 + baseIqPotential * 4;
-  maxAssists = Math.min(Math.max(1, maxAssists), 20);
-  assists = Math.floor(Math.random() * (baseIqPotential * maxAssists));
-  if (playedHard) assists = Math.floor(assists * (1.05 + Math.random() * 0.25));
+  if (minutes > 0) {
+    // Base per-minute rates adjusted by game mode scale
+    const pointsPerMin = 0.4 * modeScale;
+    const reboundsPerMin = 0.25 * modeScale;
+    const assistsPerMin = 0.15 * modeScale;
 
-  const finalPoints =
-    typeof points === 'number' && !isNaN(points)
-      ? Math.max(0, Math.min(Math.floor(points), 60))
-      : 0;
-  const finalRebounds =
-    typeof rebounds === 'number' && !isNaN(rebounds)
-      ? Math.max(0, Math.min(Math.floor(rebounds), 25))
-      : 0;
-  const finalAssists =
-    typeof assists === 'number' && !isNaN(assists)
-      ? Math.max(0, Math.min(Math.floor(assists), 20))
-      : 0;
-  const finalMinutes = Math.max(0, minutes);
+    // Position adjustments
+    const posPointFactor = position.includes('Guard') ? 1.1 : position.includes('Center') ? 0.9 : 1;
+    const posReboundFactor = position.includes('Center')
+      ? 1.2
+      : position.includes('Guard')
+      ? 0.8
+      : 1;
+    const posAssistFactor = position.includes('Point Guard')
+      ? 1.3
+      : position.includes('Guard')
+      ? 1.1
+      : 0.9;
+
+    // Calculate stats based on minutes, skill, and some randomness
+    points = Math.floor(
+      minutes *
+        pointsPerMin *
+        posPointFactor *
+        (stats.shooting / 50) *
+        roleMultiplier *
+        energyFactor *
+        (0.7 + Math.random() * 0.6)
+    );
+    rebounds = Math.floor(
+      minutes *
+        reboundsPerMin *
+        posReboundFactor *
+        (stats.athleticism / 55) *
+        roleMultiplier *
+        energyFactor *
+        (0.7 + Math.random() * 0.6)
+    );
+    assists = Math.floor(
+      minutes *
+        assistsPerMin *
+        posAssistFactor *
+        (stats.basketballIQ / 60) *
+        roleMultiplier *
+        energyFactor *
+        (0.7 + Math.random() * 0.6)
+    );
+  }
 
   const resultStatLine: GameStatLine = {
-    points: finalPoints,
-    rebounds: finalRebounds,
-    assists: finalAssists,
-    minutes: finalMinutes,
+    points: clamp(points, 0, 70),
+    rebounds: clamp(rebounds, 0, 30),
+    assists: clamp(assists, 0, 25),
+    minutes: minutes,
   };
   const gameImpactScore =
-    (finalPoints * 1.0 + finalRebounds * 1.2 + finalAssists * 1.5 + finalMinutes / 2) / 4;
+    (resultStatLine.points * 1.0 +
+      resultStatLine.rebounds * 1.2 +
+      resultStatLine.assists * 1.5 +
+      resultStatLine.minutes / 2) /
+    4;
   let winChance =
     0.45 + stats.basketballIQ / 500 + stats.professionalism / 600 + gameImpactScore / 200;
-  if (playedHard && finalPoints > 15) winChance += 0.05;
+  if (playedHard && resultStatLine.points > 15) winChance += 0.05;
   if (stats.energy < 20) winChance -= 0.15;
   const teamWon = Math.random() < clamp(winChance, 0.05, 0.95);
   return { statLine: resultStatLine, teamWon: teamWon };
