@@ -1,25 +1,24 @@
-import type { GameEvent, Player } from '../../types'; // Adjust path
-import { colStarterEvents } from './college/colStarterEvents'; // Adjust path
-import { hsFreshmanEvents } from './highSchool/hsFreshmanEvents'; // Adjust path
+import type { GameEvent, Player } from '../../types';
+import { colStarterEvents } from './college/colStarterEvents';
+import { hsJuniorEvents } from './highSchool/hsJuniorEvents';
+import { hsSeniorEvents } from './highSchool/hsSeniorEvents';
 
 export const getModeRoleContextualEvent = (player: Player): GameEvent | null => {
-  const { gameMode, currentRole } = player;
+  const { gameMode, currentSeasonInMode } = player;
   const potentialEvents: GameEvent[] = [];
 
   if (gameMode === 'High School') {
-    if (currentRole === 'Freshman Newcomer' || currentRole === 'Sophomore Contender') {
-      potentialEvents.push(...hsFreshmanEvents); // Use the imported array
+    if (currentSeasonInMode === 3) {
+      potentialEvents.push(...hsJuniorEvents);
     }
-    // Example: if (currentRole === 'Varsity Starter') { potentialEvents.push(...hsStarterEvents); }
+    // FIX: Added senior year events
+    if (currentSeasonInMode === 4) {
+      potentialEvents.push(...hsSeniorEvents);
+    }
   } else if (gameMode === 'College') {
-    if (currentRole === 'Starter' || currentRole === 'Conference Star') {
-      potentialEvents.push(...colStarterEvents); // Use the imported array
+    if (player.currentRole === 'Starter' || player.currentRole === 'Conference Star') {
+      potentialEvents.push(...colStarterEvents);
     }
-    // Example: if (currentRole === 'Walk-On Hopeful') { potentialEvents.push(...colWalkOnEvents); }
-  } else if (gameMode === 'Professional') {
-    // Example:
-    // if (currentRole === 'Rookie') { potentialEvents.push(...proRookieEvents); }
-    // if (currentRole === 'Established Star') { potentialEvents.push(...proStarEvents); }
   }
 
   if (potentialEvents.length > 0) {

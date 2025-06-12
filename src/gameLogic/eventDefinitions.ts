@@ -27,7 +27,13 @@ export const handleAutomatedPracticeDay = (
   let logMessage = `Day ${player.currentDayInSeason}: A standard day of practice.`;
 
   if (Math.random() < 0.4) {
-    const statsToImprove: (keyof PlayerStats)[] = ['shooting', 'athleticism', 'basketballIQ'];
+    // FIX: Added 'durability' to the list of improvable stats during practice.
+    const statsToImprove: (keyof PlayerStats)[] = [
+      'shooting',
+      'athleticism',
+      'basketballIQ',
+      'durability',
+    ];
     const statToFocus = statsToImprove[Math.floor(Math.random() * statsToImprove.length)];
     const gain = getDiminishingReturnsGain(
       newStats[statToFocus] as number,

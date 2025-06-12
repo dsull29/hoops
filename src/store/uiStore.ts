@@ -11,14 +11,27 @@ interface UIState {
   setHasLoaded: (loaded: boolean) => void;
 }
 
+// FIX: This function now runs immediately to get the theme from localStorage
+// before the store is even created. This prevents the "flash" of the wrong theme.
+const getInitialDarkMode = (): boolean => {
+  // Check if we are in a browser environment before accessing localStorage
+  if (typeof window !== 'undefined') {
+    const storedTheme = localStorage.getItem(LOCAL_STORAGE_KEY_THEME);
+    const isDark = storedTheme === 'dark';
+    // Also set the attribute on the HTML tag right away
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    return isDark;
+  }
+  return false; // Default to light mode for server-side rendering or other environments
+};
+
 /**
  * Zustand store for managing global UI state.
- * This includes theme settings and initial asset loading state.
- * It's kept separate from the core game state for better separation of concerns.
  */
 export const useUIStore = create<UIState>((set) => ({
   // --- STATE ---
-  isDarkMode: false, // Default value, will be updated on initial load
+  // FIX: The initial state is now correctly set from localStorage on load.
+  isDarkMode: getInitialDarkMode(),
   hasLoadedInitialState: false,
 
   // --- ACTIONS ---

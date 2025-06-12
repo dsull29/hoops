@@ -6,17 +6,28 @@ import { generateSeasonSchedule } from './seasonLogic';
 export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
   const validMetaPoints =
     typeof metaSkillPoints === 'number' && !isNaN(metaSkillPoints) ? metaSkillPoints : 0;
-  // Increased base stats for a more experienced player
-  const baseStat = 35 + Math.floor(validMetaPoints / 2);
 
-  const initialSchedule = generateSeasonSchedule('High School', 3); // Start in year 3
+  // FIX: Drastically reduced the bonus from legacy points and added a cap.
+  const legacyBonus = Math.min(20, Math.floor(validMetaPoints / 15)); // Cap the bonus at +20
+  const baseStat = 35 + legacyBonus;
+
+  const initialSchedule = generateSeasonSchedule('High School', 3);
+
+  const careerLog = [
+    'Your High School career begins as a Junior on the JV team. Time to make a name for yourself!',
+  ];
+  if (legacyBonus > 0) {
+    careerLog.push(
+      `--- Your legacy provides a starting boost! (+${legacyBonus} to base stats) ---`
+    );
+  }
 
   return {
     name: getRandomName(),
     position: getRandomPosition(),
-    age: 16, // Starting age for a junior
+    age: 16,
     gameMode: 'High School',
-    currentRole: 'Junior Varsity Player', // Start as a JV Player
+    currentRole: 'Junior Varsity Player',
     stats: {
       shooting: clamp(
         baseStat + Math.floor(Math.random() * 15) - 7,
@@ -40,15 +51,13 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
       skillPoints: validMetaPoints,
     },
     traits: [],
-    currentSeason: 3, // Start in the 3rd season of High School
+    currentSeason: 3,
     currentSeasonInMode: 3,
     currentDayInSeason: 1,
     totalDaysPlayed: 0,
     schedule: initialSchedule,
     careerOver: false,
-    careerLog: [
-      'Your High School career begins as a Junior on the JV team. Time to make a name for yourself!',
-    ],
+    careerLog: careerLog,
   };
 };
 
@@ -73,7 +82,9 @@ export const processPlayerRetirement = (
   const athleticism =
     typeof updatedPlayer.stats.athleticism === 'number' ? updatedPlayer.stats.athleticism : 0;
 
-  const pointsEarned = Math.floor(updatedPlayer.totalDaysPlayed / 5) + shooting + athleticism;
+  // FIX: Greatly reduced points earned from stats and days played.
+  const pointsFromStats = Math.floor((shooting + athleticism) / 10);
+  const pointsEarned = Math.floor(updatedPlayer.totalDaysPlayed / 10) + pointsFromStats;
 
   const newTotalMetaSkillPoints = (metaSkillPointsAtRunStart || 0) + pointsEarned;
 
