@@ -50,6 +50,7 @@ const ATTRIBUTE_BASELINE_EXPECTATION: Record<GameMode, number> = {
 };
 
 const getRoleMultiplier = (gameMode: GameMode, role: PlayerRole): number => {
+  console.log(`Calculating role multiplier for game mode: ${gameMode}, role: ${role}`);
   if (
     role.includes('Star') ||
     role.includes('All-American') ||
