@@ -44,7 +44,6 @@ export interface PlayerStats {
   skillPoints: number;
 }
 
-// --- REFACTORED: Daily Season Structure ---
 export type ScheduleItemType = 'Practice' | 'Game' | 'Playoffs' | 'Championship' | 'Rest';
 
 export interface DailyScheduleItem {
@@ -66,7 +65,6 @@ export interface SeasonSchedule {
   losses: number;
   playoffEliminated: boolean;
 }
-// --- END REFACTOR ---
 
 export interface Player {
   name: string;
@@ -107,13 +105,22 @@ export interface Choice {
   disabled?: (player: Player) => boolean;
 }
 
+export type GameEventType =
+  | 'daily'
+  | 'gameDay'
+  | 'injury'
+  | 'agent'
+  | 'contextual'
+  | 'weekly'
+  | 'scheduled';
+
 export interface GameEvent {
   id: string;
   title: string;
   description: string;
   choices: Choice[];
   isMandatory?: boolean;
-  type?: 'daily' | 'gameDay' | 'injury' | 'agent' | 'contextual' | 'weekly';
+  type?: GameEventType;
 }
 
 export interface GameState {

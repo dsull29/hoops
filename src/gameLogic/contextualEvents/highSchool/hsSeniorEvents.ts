@@ -14,16 +14,20 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'focus_on_apps',
         text: 'Take a night off from the gym to focus on applications.',
         action: (p: Player) => {
+          let outcomeMessage =
+            'You made some good progress on your applications, but you feel like you missed valuable training time. ';
+          const professionalismGain = 1 + Math.floor(Math.random() * 2); // Gain 1 or 2
+          const moraleLoss = 2 + Math.floor(Math.random() * 3); // Lose 2, 3, or 4
           p.stats.professionalism = clamp(
-            p.stats.professionalism + 1,
+            p.stats.professionalism + professionalismGain,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
-          p.stats.morale = clamp(p.stats.morale - 3, 0, MAX_MORALE);
+          p.stats.morale = clamp(p.stats.morale - moraleLoss, 0, MAX_MORALE);
+          outcomeMessage += `Professionalism +${professionalismGain}, Morale -${moraleLoss}.`;
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You made some good progress on your applications, but you feel like you missed valuable training time. Professionalism +1, Morale -3.',
+            outcomeMessage,
           };
         },
       },
@@ -31,16 +35,27 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'procrastinate_apps',
         text: 'Basketball is your ticket. The apps can wait.',
         action: (p: Player) => {
-          p.stats.shooting = clamp(p.stats.shooting + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          let outcomeMessage =
+            'You had a great practice, but the application deadlines are looming, causing some background stress. ';
+          const shootingGain = Math.random() < 0.75 ? 1 : 0; // 75% chance to gain
+          const professionalismLoss = 1 + Math.floor(Math.random() * 2);
+          if (shootingGain > 0) {
+            p.stats.shooting = clamp(
+              p.stats.shooting + shootingGain,
+              MIN_STAT_VALUE,
+              MAX_STAT_VALUE
+            );
+            outcomeMessage += `Shooting +${shootingGain}. `;
+          }
           p.stats.professionalism = clamp(
-            p.stats.professionalism - 2,
+            p.stats.professionalism - professionalismLoss,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
+          outcomeMessage += `Professionalism -${professionalismLoss}.`;
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You had a great practice, but the application deadlines are looming, causing some background stress. Shooting +1, Professionalism -2.',
+            outcomeMessage,
           };
         },
       },
@@ -57,13 +72,19 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'go_to_prom',
         text: 'You only get one senior prom. Go and have fun.',
         action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale + 15, 0, MAX_MORALE);
-          p.stats.charisma = clamp(p.stats.charisma + 2, MIN_STAT_VALUE, MAX_STAT_VALUE);
-          p.stats.durability = clamp(p.stats.durability - 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          const moraleGain = 10 + Math.floor(Math.random() * 11); // Gain 10-20
+          const charismaGain = Math.random() < 0.5 ? 1 : 2; // Gain 1 or 2
+          const durabilityLoss = 1;
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
+          p.stats.charisma = clamp(p.stats.charisma + charismaGain, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          p.stats.durability = clamp(
+            p.stats.durability - durabilityLoss,
+            MIN_STAT_VALUE,
+            MAX_STAT_VALUE
+          );
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You had an unforgettable night, but staying out late definitely cost you some energy for the game. Morale +15, Charisma +2, Durability -1.',
+            outcomeMessage: `You had an unforgettable night, but staying out late took its toll. Morale +${moraleGain}, Charisma +${charismaGain}, Durability -${durabilityLoss}.`,
           };
         },
       },
@@ -71,16 +92,17 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'skip_prom',
         text: 'Skip prom. The team needs you at 100%.',
         action: (p: Player) => {
+          const professionalismGain = 2 + Math.floor(Math.random() * 2); // Gain 2 or 3
+          const moraleLoss = 3 + Math.floor(Math.random() * 4); // Lose 3-6
           p.stats.professionalism = clamp(
-            p.stats.professionalism + 3,
+            p.stats.professionalism + professionalismGain,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
-          p.stats.morale = clamp(p.stats.morale - 5, 0, MAX_MORALE);
+          p.stats.morale = clamp(p.stats.morale - moraleLoss, 0, MAX_MORALE);
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'Your sacrifice for the team was noted by everyone, especially the coaches. Professionalism +3, Morale -5.',
+            outcomeMessage: `Your sacrifice for the team was noted by everyone, but you can't help feeling like you missed out. Professionalism +${professionalismGain}, Morale -${moraleLoss}.`,
           };
         },
       },
@@ -97,11 +119,11 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'feel_the_emotion',
         text: 'Soak it all in. This is what you worked for.',
         action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale + 10, 0, MAX_MORALE);
+          const moraleGain = 5 + Math.floor(Math.random() * 6); // Gain 5-10
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'The emotion of the night fuels you. You feel a deep connection to your hometown and team. Morale +10.',
+            outcomeMessage: `The emotion of the night fuels you. You feel a deep connection to your hometown and team. Morale +${moraleGain}.`,
           };
         },
       },
@@ -118,6 +140,14 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'accept_D2_offer',
         text: 'This is a dream come true!',
         action: (p: Player) => {
+          if (p.traits.includes('College Bound (D-II)')) {
+            p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
+            return {
+              updatedPlayer: p,
+              outcomeMessage:
+                'Another school showing interest! It feels good to be wanted. Morale +5.',
+            };
+          }
           p.stats.morale = clamp(p.stats.morale + 20, 0, MAX_MORALE);
           p.traits.push('College Bound (D-II)');
           return {
@@ -131,16 +161,17 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'wait_for_better',
         text: 'Thank them, but hold out for a D-I offer.',
         action: (p: Player) => {
+          const professionalismGain = Math.random() < 0.6 ? 1 : 2;
+          const moraleGain = Math.random() < 0.6 ? 5 : 3;
           p.stats.professionalism = clamp(
-            p.stats.professionalism + 1,
+            p.stats.professionalism + professionalismGain,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
-          p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You bet on yourself. It’s a risky move, but you believe in your talent. Professionalism +1, Morale +5.',
+            outcomeMessage: `You bet on yourself. It’s a risky move, but you believe in your talent. Professionalism +${professionalismGain}, Morale +${moraleGain}.`,
           };
         },
       },
@@ -157,12 +188,13 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'cherish_moment',
         text: "Acknowledge how far you've come.",
         action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale + 10, 0, MAX_MORALE);
-          p.stats.charisma = clamp(p.stats.charisma + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          const moraleGain = 8 + Math.floor(Math.random() * 5); // 8-12
+          const charismaGain = 1;
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
+          p.stats.charisma = clamp(p.stats.charisma + charismaGain, MIN_STAT_VALUE, MAX_STAT_VALUE);
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'The message from your captain is a huge confidence booster. Morale +10, Charisma +1.',
+            outcomeMessage: `The message from your captain is a huge confidence booster. Morale +${moraleGain}, Charisma +${charismaGain}.`,
           };
         },
       },
@@ -179,16 +211,24 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'cram_for_exams',
         text: 'Pull an all-nighter to study.',
         action: (p: Player) => {
+          let outcomeMessage =
+            'You aced your exams, but the lack of sleep has left you feeling drained. ';
+          const professionalismGain = Math.random() < p.stats.professionalism / 100 ? 2 : 1;
+          const durabilityLoss = Math.random() < p.stats.durability / 100 ? 1 : 2;
           p.stats.professionalism = clamp(
-            p.stats.professionalism + 1,
+            p.stats.professionalism + professionalismGain,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
-          p.stats.durability = clamp(p.stats.durability - 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          p.stats.durability = clamp(
+            p.stats.durability - durabilityLoss,
+            MIN_STAT_VALUE,
+            MAX_STAT_VALUE
+          );
+          outcomeMessage += `Professionalism +${professionalismGain}, Durability -${durabilityLoss}.`;
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You aced your exams, but the lack of sleep has left you feeling drained. Professionalism +1, Durability -1.',
+            outcomeMessage,
           };
         },
       },
@@ -196,11 +236,18 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'balance_study_hoops',
         text: 'Find a balance between studying and practice.',
         action: (p: Player) => {
-          p.stats.basketballIQ = clamp(p.stats.basketballIQ + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          let outcomeMessage =
+            'You managed your time well, feeling prepared for both your exams and the game. ';
+          const iqGain = Math.random() < p.stats.basketballIQ / 100 ? 2 : 1;
+          p.stats.basketballIQ = clamp(
+            p.stats.basketballIQ + iqGain,
+            MIN_STAT_VALUE,
+            MAX_STAT_VALUE
+          );
+          outcomeMessage += `Basketball IQ +${iqGain}.`;
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You managed your time well, feeling prepared for both your exams and the game. Basketball IQ +1.',
+            outcomeMessage,
           };
         },
       },
@@ -217,11 +264,11 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'feel_nostalgic',
         text: 'Get nostalgic about your time here.',
         action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
+          const moraleGain = 3 + Math.floor(Math.random() * 5); // 3-7
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              "It's been a long road. You feel a mix of sadness and excitement. Morale +5.",
+            outcomeMessage: `It's been a long road. You feel a mix of sadness and excitement. Morale +${moraleGain}.`,
           };
         },
       },
@@ -229,10 +276,11 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'feel_anxious',
         text: 'Feel anxious about the uncertainty.',
         action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale - 5, 0, MAX_MORALE);
+          const moraleLoss = 3 + Math.floor(Math.random() * 5); // 3-7
+          p.stats.morale = clamp(p.stats.morale - moraleLoss, 0, MAX_MORALE);
           return {
             updatedPlayer: p,
-            outcomeMessage: 'Not knowing what comes next is starting to get to you. Morale -5.',
+            outcomeMessage: `Not knowing what comes next is starting to get to you. Morale -${moraleLoss}.`,
           };
         },
       },
@@ -249,21 +297,25 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'attend_workout',
         text: "Attend the workout and show them what you've got.",
         action: (p: Player) => {
-          let msg = 'You held your own against top competition. ';
-          if (p.stats.athleticism > 70 && p.stats.shooting > 70) {
+          let msg = 'You went to the workout and held your own against top competition. ';
+          const roll = Math.random();
+          const skillCheck = (p.stats.athleticism + p.stats.shooting) / 200; // Value between 0.1 and 0.99
+          if (roll < skillCheck) {
+            const profGain = 2;
             p.stats.professionalism = clamp(
-              p.stats.professionalism + 2,
+              p.stats.professionalism + profGain,
               MIN_STAT_VALUE,
               MAX_STAT_VALUE
             );
-            msg += 'You definitely turned some heads. Professionalism +2.';
+            msg += `You definitely turned some heads! Professionalism +${profGain}.`;
           } else {
+            const profGain = 1;
             p.stats.professionalism = clamp(
-              p.stats.professionalism + 1,
+              p.stats.professionalism + profGain,
               MIN_STAT_VALUE,
               MAX_STAT_VALUE
             );
-            msg += 'It was a valuable learning experience. Professionalism +1.';
+            msg += `It was a valuable learning experience. Professionalism +${profGain}.`;
           }
           return {
             updatedPlayer: p,
@@ -283,16 +335,17 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'participate_in_prank',
         text: "Of course! It's a rite of passage.",
         action: (p: Player) => {
-          p.stats.charisma = clamp(p.stats.charisma + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          const charismaGain = 1;
+          const professionalismLoss = Math.random() < 0.5 ? 1 : 2;
+          p.stats.charisma = clamp(p.stats.charisma + charismaGain, MIN_STAT_VALUE, MAX_STAT_VALUE);
           p.stats.professionalism = clamp(
-            p.stats.professionalism - 1,
+            p.stats.professionalism - professionalismLoss,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'The prank was hilarious and you feel closer to your classmates. Charisma +1, Professionalism -1.',
+            outcomeMessage: `The prank was hilarious and you feel closer to your classmates. Charisma +${charismaGain}, Professionalism -${professionalismLoss}.`,
           };
         },
       },
@@ -300,15 +353,15 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'sit_out_prank',
         text: "No, it's childish and risky.",
         action: (p: Player) => {
+          const professionalismGain = Math.random() < 0.5 ? 1 : 2;
           p.stats.professionalism = clamp(
-            p.stats.professionalism + 1,
+            p.stats.professionalism + professionalismGain,
             MIN_STAT_VALUE,
             MAX_STAT_VALUE
           );
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'You decide to stay out of it, not wanting to risk any trouble before graduation. Professionalism +1.',
+            outcomeMessage: `You decide to stay out of it, not wanting to risk any trouble before graduation. Professionalism +${professionalismGain}.`,
           };
         },
       },
@@ -325,12 +378,22 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'feel_relieved',
         text: 'That was close...',
         action: (p: Player) => {
-          p.stats.durability = clamp(p.stats.durability + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
-          p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
+          const durabilityGain = Math.random() < 0.3 ? 1 : 0; // 30% chance for a permanent lesson
+          const moraleGain = 5 + Math.floor(Math.random() * 3); // 5-7
+          let outcomeMessage = 'The scare makes you appreciate your health. ';
+          if (durabilityGain > 0) {
+            p.stats.durability = clamp(
+              p.stats.durability + durabilityGain,
+              MIN_STAT_VALUE,
+              MAX_STAT_VALUE
+            );
+            outcomeMessage += `You commit to taking better care of your body. Durability +${durabilityGain}. `;
+          }
+          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
+          outcomeMessage += `Morale +${moraleGain}.`;
           return {
             updatedPlayer: p,
-            outcomeMessage:
-              'The scare makes you appreciate your health and commit to taking better care of your body. Durability +1, Morale +5.',
+            outcomeMessage: outcomeMessage,
           };
         },
       },
@@ -346,8 +409,14 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'take_freshman_under_wing',
         text: 'Take them under your wing.',
         action: (p: Player) => {
-          p.stats.charisma = clamp(p.stats.charisma + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
-          p.stats.basketballIQ = clamp(p.stats.basketballIQ + 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          const charismaGain = 1;
+          const iqGain = 1;
+          p.stats.charisma = clamp(p.stats.charisma + charismaGain, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          p.stats.basketballIQ = clamp(
+            p.stats.basketballIQ + iqGain,
+            MIN_STAT_VALUE,
+            MAX_STAT_VALUE
+          );
           return {
             updatedPlayer: p,
             outcomeMessage:
@@ -359,31 +428,11 @@ export const hsSeniorEvents: GameEvent[] = [
         id: 'too_busy_for_freshman',
         text: "You're too busy focusing on your own future.",
         action: (p: Player) => {
-          p.stats.charisma = clamp(p.stats.charisma - 1, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          const charismaLoss = 1;
+          p.stats.charisma = clamp(p.stats.charisma - charismaLoss, MIN_STAT_VALUE, MAX_STAT_VALUE);
           return {
             updatedPlayer: p,
-            outcomeMessage: 'You brush off the request. Your focus is elsewhere. Charisma -1.',
-          };
-        },
-      },
-    ],
-  },
-  {
-    id: 'hs_senior_last_practice',
-    title: 'The Last Practice',
-    description:
-      "The coach calls the team together after your final practice ever. He gives a speech about the journey and the bonds you've all formed.",
-    type: 'contextual',
-    choices: [
-      {
-        id: 'thank_coach',
-        text: 'Thank the coach for everything.',
-        action: (p: Player) => {
-          p.stats.morale = clamp(p.stats.morale + 10, 0, MAX_MORALE);
-          return {
-            updatedPlayer: p,
-            outcomeMessage:
-              "It's an emotional moment. You feel immense gratitude for your team and coaches. Morale +10.",
+            outcomeMessage: `You brush off the request. Your focus is elsewhere. Charisma -${charismaLoss}.`,
           };
         },
       },

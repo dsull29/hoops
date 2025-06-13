@@ -15,9 +15,10 @@ import {
   handleAutomatedPracticeDay,
   minorInjuryEvent,
 } from './eventDefinitions';
+// FIX: Updated the import path to the new scheduled events index file.
+import { getScheduledEvent } from './scheduledEvents';
 import { generateSeasonSchedule } from './seasonLogic';
 
-// The evaluatePlayerProgress function remains the same.
 interface EvaluatePlayerProgressResult {
   newRole: PlayerRole;
   newMode: GameMode;
@@ -132,7 +133,6 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
   let isGameOver = false;
   let gameOverMessage: string | undefined;
 
-  // --- Career End Check (Age) ---
   if (nextPlayerState.age > 40 && nextPlayerState.gameMode === 'Professional') {
     isGameOver = true;
     gameOverMessage = "After a long and storied career, it's time to retire.";
@@ -141,27 +141,26 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
     return { nextPlayerState, nextEvent: null, isGameOver, gameOverMessage };
   }
 
-  // --- Move to next day ---
   nextPlayerState.totalDaysPlayed += 1;
   nextPlayerState.currentDayInSeason += 1;
 
-  // --- End of Season Progression ---
+  const scheduledEvent = getScheduledEvent(nextPlayerState);
+  if (scheduledEvent) {
+    nextEvent = scheduledEvent;
+    return { nextPlayerState, nextEvent, isGameOver, gameOverMessage };
+  }
+
   if (nextPlayerState.currentDayInSeason > nextPlayerState.schedule.schedule.length) {
     nextPlayerState.currentDayInSeason = 1;
     nextPlayerState.currentSeason += 1;
     nextPlayerState.age += 1;
-    // FIX: No longer need to reset energy
-    // nextPlayerState.stats.energy = MAX_ENERGY;
-
     const progressResult = evaluatePlayerProgress(nextPlayerState);
-
     if (nextPlayerState.gameMode !== progressResult.newMode) {
       nextPlayerState.currentSeasonInMode = 1;
       nextPlayerState.gameMode = progressResult.newMode;
     } else {
       nextPlayerState.currentSeasonInMode += 1;
     }
-
     if (nextPlayerState.currentRole !== progressResult.newRole) {
       progressResult.logMessages.push(
         `Your performance has earned you a new role: ${progressResult.newRole}!`
@@ -169,12 +168,10 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
     }
     nextPlayerState.currentRole = progressResult.newRole;
     nextPlayerState.careerLog.push(...progressResult.logMessages);
-
     nextPlayerState.schedule = generateSeasonSchedule(
       nextPlayerState.gameMode,
       nextPlayerState.currentSeason
     );
-
     nextEvent = {
       id: 'new_season_started',
       title: `Welcome to a New Season!`,
@@ -194,11 +191,9 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
     return { nextPlayerState, nextEvent, isGameOver, gameOverMessage };
   }
 
-  // --- Daily Event Check ---
   const today = nextPlayerState.schedule.schedule.find(
     (item) => item.day === nextPlayerState.currentDayInSeason
   );
-
   if (today) {
     if (today.type === 'Game' || today.type === 'Playoffs' || today.type === 'Championship') {
       if (
@@ -223,7 +218,6 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
         const midSeasonEval = evaluatePlayerProgress(nextPlayerState);
         const originalRoleIndex = roles.indexOf(originalRole);
         const newRoleIndex = roles.indexOf(midSeasonEval.newRole);
-
         if (midSeasonEval.newRole !== originalRole && newRoleIndex > originalRoleIndex) {
           nextPlayerState.currentRole = midSeasonEval.newRole;
           const logMessage = `Your hard work is paying off! You've been promoted to: ${midSeasonEval.newRole}!`;
@@ -247,7 +241,6 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
         }
       }
       if (!nextEvent) {
-        // FIX: Injury chance is now higher if durability is low.
         const injuryChance = 0.05 - (nextPlayerState.stats.durability - 50) * 0.001;
         if (Math.random() < injuryChance) {
           nextEvent = minorInjuryEvent;
@@ -256,7 +249,7 @@ export const advanceDay = (currentPlayer: Player): AdvanceDayResult => {
           nextPlayerState.totalDaysPlayed % 45 === 0
         ) {
           nextEvent = agentMeetingEvent(nextPlayerState);
-        } else if (Math.random() < 0.15) {
+        } else if (Math.random() < 0.25) {
           nextEvent = getModeRoleContextualEvent(nextPlayerState);
         }
       }
