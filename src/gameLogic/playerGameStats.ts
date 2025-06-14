@@ -3,6 +3,8 @@ import { clamp } from '../utils';
 import { TRAIT_DEFINITIONS } from './traits';
 
 const getRoleMultiplier = (gameMode: GameMode, role: PlayerRole): number => {
+  if (gameMode === 'High School') console.log('High School Role:', role);
+
   if (
     role.includes('Star') ||
     role.includes('All-American') ||

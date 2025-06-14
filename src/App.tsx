@@ -95,7 +95,7 @@ const AppContent: React.FC = () => {
         {renderGameContent()}
       </Content>
       <Footer style={{ textAlign: 'center' }}>
-        Hoops v1.0.0 - A dsull Games Production ©{new Date().getFullYear()}
+        Hoops v0.0.5 - ©{new Date().getFullYear()}
       </Footer>
     </Layout>
   );
