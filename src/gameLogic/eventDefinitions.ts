@@ -1,3 +1,4 @@
+// src/gameLogic/eventDefinitions.ts
 import { MAX_MORALE, MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import type { GameEvent, Player, PlayerStats } from '../types';
 import { clamp } from '../utils';
@@ -27,7 +28,6 @@ export const handleAutomatedPracticeDay = (
   let logMessage = `Day ${player.currentDayInSeason}: A standard day of practice.`;
 
   if (Math.random() < 0.4) {
-    // FIX: Added 'durability' to the list of improvable stats during practice.
     const statsToImprove: (keyof PlayerStats)[] = [
       'shooting',
       'athleticism',
@@ -59,12 +59,16 @@ export const handleAutomatedPracticeDay = (
   };
 };
 
-export const gameDayEvent = (player: Player, opponent: string): GameEvent => {
+export const gameDayEvent = (
+  player: Player,
+  opponentName: string,
+  opponentId?: string
+): GameEvent => {
   return {
-    id: 'game_day',
-    title: `Game Day vs ${opponent}!`,
+    id: `game_day_${opponentId || opponentName}`,
+    title: `Game Day vs ${opponentName}!`,
     description:
-      "It's time to hit the court. Your performance will depend on your skills and morale.",
+      "It's time to hit the court. Your performance will depend on your skills, your team, and your opponent.",
     isMandatory: true,
     choices: [
       {
@@ -74,6 +78,8 @@ export const gameDayEvent = (player: Player, opponent: string): GameEvent => {
         action: (p_action) => {
           const newStats = { ...p_action.stats };
 
+          // The generatePlayerGameStats could be enhanced in the future
+          // to use opponentId to look up the opponent's stats.
           const gamePerformance = generatePlayerGameStats(p_action);
           const { teamWon } = gamePerformance;
 
@@ -82,7 +88,7 @@ export const gameDayEvent = (player: Player, opponent: string): GameEvent => {
 
           return {
             updatedPlayer: { ...p_action, stats: newStats },
-            outcomeMessage: `Game finished.`,
+            outcomeMessage: `Game finished against ${opponentName}.`,
             gamePerformance,
           };
         },

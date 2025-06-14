@@ -1,5 +1,7 @@
+// src/services/db.ts
 import type { PersistStorage, StorageValue } from 'zustand/middleware';
 import type { Player } from '../types';
+import type { Team } from '../types/teams'; // Import the Team type
 
 const DB_NAME = 'HoopsDB';
 const DB_VERSION = 1;
@@ -30,8 +32,10 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // Define the shape of the state that will actually be saved to IndexedDB.
+// This now correctly includes the 'teams' array.
 type PersistedState = {
   player: Player | null;
+  teams: Team[];
   gamePhase: 'menu' | 'playing' | 'gameOver';
   metaSkillPoints: number;
   metaSkillPointsAtRunStart: number;
@@ -50,7 +54,6 @@ export const idbStorage: PersistStorage<PersistedState> = {
 
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        // FIX: Return the object directly, as Zustand expects the { state, version } wrapper
         resolve((request.result as StorageValue<PersistedState>) || null);
       };
       request.onerror = () => reject(request.error);

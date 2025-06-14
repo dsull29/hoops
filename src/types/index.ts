@@ -1,3 +1,6 @@
+// src/types/index.ts
+import type { Team } from './teams';
+
 export type GameMode = 'High School' | 'College' | 'Professional';
 export type HighSchoolRole =
   | 'Junior Varsity Player'
@@ -50,6 +53,7 @@ export interface DailyScheduleItem {
   day: number;
   type: ScheduleItemType;
   opponent?: string;
+  opponentId?: string; // Add opponentId for linking to the team object
   gameResult?: {
     playerStats: GameStatLine;
     teamWon: boolean;
@@ -108,6 +112,7 @@ export interface Player {
   name: string;
   position: string;
   age: number;
+  teamId: string; // The ID of the team the player is currently on
   gameMode: GameMode;
   currentRole: PlayerRole;
   stats: PlayerStats;
@@ -163,6 +168,7 @@ export interface GameEvent {
 
 export interface GameState {
   player: Player | null;
+  teams: Team[]; // Array to hold all teams in the game world
   currentEvent: GameEvent | null;
   isLoading: boolean;
   gamePhase: 'menu' | 'playing' | 'gameOver';

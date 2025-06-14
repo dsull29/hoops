@@ -1,17 +1,23 @@
+// src/store/gameStore.ts
 import { create } from 'zustand';
 import { persist, type PersistOptions } from 'zustand/middleware';
 import { LOCAL_STORAGE_KEY_GAME_STATE } from '../constants';
+import { generateWorld } from '../gameLogic/teamGenerator';
 import { archiveCareer, idbStorage } from '../services/db';
 import { gameEngine } from '../services/gameEngine';
 import type { Choice, GameEvent, Player } from '../types';
+import type { Team } from '../types/teams';
 
+// The state that will be persisted to IndexedDB
 type PersistedState = {
   player: Player | null;
+  teams: Team[]; // Ensure 'teams' is part of the persisted state
   gamePhase: 'menu' | 'playing' | 'gameOver';
   metaSkillPoints: number;
   metaSkillPointsAtRunStart: number;
 };
 
+// The full in-memory store state
 type FullStore = PersistedState & {
   currentEvent: GameEvent | null;
   isLoading: boolean;
@@ -27,35 +33,41 @@ type FullStore = PersistedState & {
 export const useGameStore = create<FullStore>()(
   persist(
     (set, get) => ({
+      // --- STATE ---
       player: null,
+      teams: [], // Initialize teams array
       currentEvent: null,
       gamePhase: 'menu',
       metaSkillPoints: 0,
       metaSkillPointsAtRunStart: 0,
       isLoading: false,
 
+      // --- ACTIONS ---
       setCurrentEvent: (event) => set({ currentEvent: event }),
 
       startGame: () => {
         console.log('[gameStore] Starting new game...');
         const { metaSkillPoints } = get();
-        const initialState = gameEngine.startGame(metaSkillPoints);
+        const { teams } = generateWorld(); // Generate the world first
+        const initialState = gameEngine.startGame(metaSkillPoints, teams);
         console.log('[gameStore] Initial player created:', initialState.player);
         set({
           ...initialState,
+          teams: teams,
           gamePhase: 'playing',
           metaSkillPointsAtRunStart: metaSkillPoints,
+          currentEvent: null, // Ensure no lingering event from a previous game
         });
       },
 
       handleChoice: (choice: Choice) => {
-        const { player } = get();
-        if (!player) return;
+        if (!get().player) return;
         set({ isLoading: true });
         setTimeout(() => {
-          const { player: currentPlayer, metaSkillPointsAtRunStart } = get();
+          const { player: currentPlayer, teams: currentTeams, metaSkillPointsAtRunStart } = get();
+          // Pass the 'currentTeams' array to the game engine
           const { nextPlayerState, nextEvent, isGameOver, outcomeMessage } =
-            gameEngine.processPlayerChoice(currentPlayer!, choice);
+            gameEngine.processPlayerChoice(currentPlayer!, choice, currentTeams);
           if (isGameOver) {
             const { finalPlayerState, newTotalMetaSkillPoints } =
               gameEngine.processPlayerRetirement(
@@ -82,17 +94,17 @@ export const useGameStore = create<FullStore>()(
       },
 
       simDay: () => {
-        const { player } = get();
-        if (!player) return;
+        if (!get().player) return;
         set({ isLoading: true });
         setTimeout(() => {
-          const { player: currentPlayer, metaSkillPointsAtRunStart } = get();
+          const { player: currentPlayer, teams: currentTeams, metaSkillPointsAtRunStart } = get();
+          // Pass 'currentTeams' and the number of days (1)
           const {
             player: nextPlayerState,
             event: nextEvent,
             isGameOver,
             gameOverMessage,
-          } = gameEngine.simulateDays(currentPlayer!, 1);
+          } = gameEngine.simulateDays(currentPlayer!, currentTeams, 1);
           if (isGameOver) {
             const { finalPlayerState, newTotalMetaSkillPoints } =
               gameEngine.processPlayerRetirement(
@@ -115,17 +127,17 @@ export const useGameStore = create<FullStore>()(
       },
 
       simToNextEvent: () => {
-        const { player } = get();
-        if (!player) return;
+        if (!get().player) return;
         set({ isLoading: true });
         setTimeout(() => {
-          const { player: currentPlayer, metaSkillPointsAtRunStart } = get();
+          const { player: currentPlayer, teams: currentTeams, metaSkillPointsAtRunStart } = get();
+          // Pass 'currentTeams' and the max number of days (365)
           const {
             player: nextPlayerState,
             event: nextEvent,
             isGameOver,
             gameOverMessage,
-          } = gameEngine.simulateDays(currentPlayer!, 365);
+          } = gameEngine.simulateDays(currentPlayer!, currentTeams, 365);
           if (isGameOver) {
             const { finalPlayerState, newTotalMetaSkillPoints } =
               gameEngine.processPlayerRetirement(
@@ -171,6 +183,7 @@ export const useGameStore = create<FullStore>()(
         console.log('[gameStore] Clearing all saved game data and resetting state.');
         set({
           player: null,
+          teams: [],
           currentEvent: null,
           gamePhase: 'menu',
           metaSkillPoints: 0,
@@ -181,15 +194,16 @@ export const useGameStore = create<FullStore>()(
     {
       name: LOCAL_STORAGE_KEY_GAME_STATE,
       storage: idbStorage,
+      // This function determines which parts of the state are saved.
+      // It now correctly includes the 'teams' array.
       partialize: (state): PersistedState => ({
         player: state.player,
+        teams: state.teams,
         gamePhase: state.gamePhase,
         metaSkillPoints: state.metaSkillPoints,
         metaSkillPointsAtRunStart: state.metaSkillPointsAtRunStart,
       }),
       onRehydrateStorage: () => {
-        console.log('[gameStore] Hydration has started...');
-        // FIX: The unused 'state' parameter is prefixed with an underscore to satisfy the linter.
         return (_state, error) => {
           if (error) {
             console.error('[gameStore] An error occurred during hydration:', error);

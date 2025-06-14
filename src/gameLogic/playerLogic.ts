@@ -1,19 +1,40 @@
+// src/gameLogic/playerLogic.ts
 import { MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
 import type { Player, PlayerTrait } from '../types';
+import type { Team } from '../types/teams';
 import { clamp, getRandomName, getRandomPosition } from '../utils/index';
 import { generateSeasonSchedule } from './seasonLogic';
 import { TRAIT_DEFINITIONS, TraitCategory } from './traits';
 
-export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
+export const createInitialPlayer = (metaSkillPoints: number = 0, teams: Team[]): Player => {
   const validMetaPoints =
     typeof metaSkillPoints === 'number' && !isNaN(metaSkillPoints) ? metaSkillPoints : 0;
 
   const legacyBonus = Math.min(20, Math.floor(validMetaPoints / 15));
   const baseStat = 35 + legacyBonus;
 
-  const initialSchedule = generateSeasonSchedule('High School', 3);
+  // --- Select a team based on legacy points ---
+  const legacyTier = Math.floor(validMetaPoints / 50); // 0 = low, 1 = mid, 2+ = high
+
+  const lowPrestigeTeams = teams.filter((t) => t.prestige < 25);
+  const midPrestigeTeams = teams.filter((t) => t.prestige >= 25 && t.prestige < 40);
+  const highPrestigeTeams = teams.filter((t) => t.prestige >= 40);
+
+  let potentialTeams: Team[];
+  if (legacyTier >= 2 && highPrestigeTeams.length > 0) {
+    potentialTeams = highPrestigeTeams;
+  } else if (legacyTier >= 1 && midPrestigeTeams.length > 0) {
+    potentialTeams = midPrestigeTeams;
+  } else {
+    // Fallback to any team if the preferred tier is empty
+    potentialTeams = lowPrestigeTeams.length > 0 ? lowPrestigeTeams : teams;
+  }
+
+  const selectedTeam = potentialTeams[Math.floor(Math.random() * potentialTeams.length)];
+
+  const initialSchedule = generateSeasonSchedule('High School', 3, teams, selectedTeam.id);
   const careerLog = [
-    'Your High School career begins as a Junior on the JV team. Time to make a name for yourself!',
+    `Your High School career begins as a Junior at ${selectedTeam.name}. Time to make a name for yourself!`,
   ];
   if (legacyBonus > 0) {
     careerLog.push(
@@ -46,12 +67,10 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
 
   const startingTraits = new Map<PlayerTrait, number>();
 
-  // --- FIX: Randomly assign traits and apply STAT_BOOST effects ---
   const possibleTraits = Array.from(TRAIT_DEFINITIONS.values());
   const traitRoll = Math.random();
 
   if (traitRoll < 1.0) {
-    // 30% chance of getting a starting trait
     let assigned = false;
     while (!assigned) {
       const randomTraitDef = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
@@ -61,7 +80,6 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
           `--- You start your career with a natural gift: ${randomTraitDef.name}! ---`
         );
 
-        // Apply STAT_BOOST effects immediately
         const level1 = randomTraitDef.levels[0];
         if (level1.effects.statBoost) {
           const { stat, value } = level1.effects.statBoost;
@@ -80,6 +98,7 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
     name: getRandomName(),
     position: getRandomPosition(),
     age: 16,
+    teamId: selectedTeam.id,
     gameMode: 'High School',
     currentRole: 'Junior Varsity Player',
     stats,
@@ -115,7 +134,6 @@ export const processPlayerRetirement = (
   const athleticism =
     typeof updatedPlayer.stats.athleticism === 'number' ? updatedPlayer.stats.athleticism : 0;
 
-  // FIX: Greatly reduced points earned from stats and days played.
   const pointsFromStats = Math.floor((shooting + athleticism) / 10);
   const pointsEarned = Math.floor(updatedPlayer.totalDaysPlayed / 10) + pointsFromStats;
 

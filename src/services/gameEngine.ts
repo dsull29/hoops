@@ -1,9 +1,12 @@
+// src/services/gameEngine.ts
 import {
   advanceDay,
+  type AdvanceDayResult,
   createInitialPlayer,
   processPlayerRetirement as logicProcessPlayerRetirement,
 } from '../gameLogic';
 import type { Choice, GameEvent, Player } from '../types';
+import type { Team } from '../types/teams';
 
 interface SimulationResult {
   player: Player;
@@ -13,8 +16,8 @@ interface SimulationResult {
 }
 
 export const gameEngine = {
-  startGame(metaSkillPoints: number) {
-    const player = createInitialPlayer(metaSkillPoints);
+  startGame(metaSkillPoints: number, teams: Team[]) {
+    const player = createInitialPlayer(metaSkillPoints, teams);
     return {
       player,
       currentEvent: null,
@@ -22,21 +25,28 @@ export const gameEngine = {
     };
   },
 
-  simulateDays(currentPlayer: Player, maxDays: number = 1): SimulationResult {
+  simulateDays(currentPlayer: Player, allTeams: Team[], maxDays: number = 1): SimulationResult {
     let playerState = { ...currentPlayer };
     let dayCounter = 0;
+    let turnResult: AdvanceDayResult;
 
     while (dayCounter < maxDays) {
-      const { nextPlayerState, nextEvent, isGameOver, gameOverMessage } = advanceDay(playerState);
-      playerState = nextPlayerState;
+      // Pass the full list of teams to the game loop
+      turnResult = advanceDay(playerState, allTeams);
+      playerState = turnResult.nextPlayerState;
       dayCounter++;
 
-      if (isGameOver) {
-        return { player: playerState, event: null, isGameOver: true, gameOverMessage };
+      if (turnResult.isGameOver) {
+        return {
+          player: playerState,
+          event: null,
+          isGameOver: true,
+          gameOverMessage: turnResult.gameOverMessage,
+        };
       }
 
-      if (nextEvent) {
-        return { player: playerState, event: nextEvent, isGameOver: false };
+      if (turnResult.nextEvent) {
+        return { player: playerState, event: turnResult.nextEvent, isGameOver: false };
       }
     }
 
@@ -45,7 +55,8 @@ export const gameEngine = {
 
   processPlayerChoice(
     currentPlayer: Player,
-    choice: Choice
+    choice: Choice,
+    allTeams: Team[]
   ): {
     nextPlayerState: Player;
     nextEvent: GameEvent | null;
@@ -59,7 +70,6 @@ export const gameEngine = {
 
     if (gamePerformance) {
       const { statLine, teamWon } = gamePerformance;
-      // FIX: Find the current day's schedule item to correctly check its type
       const today = playerAfterChoiceAction.schedule.schedule.find(
         (item) => item.day === playerAfterChoiceAction.currentDayInSeason
       );
@@ -91,8 +101,8 @@ export const gameEngine = {
 
     playerAfterChoiceAction.careerLog.push(processedOutcomeMessage);
 
-    // After a choice, immediately try to advance to the next day/event
-    const turnResult = this.simulateDays(playerAfterChoiceAction, 1);
+    // Pass allTeams to the subsequent simulation step
+    const turnResult = this.simulateDays(playerAfterChoiceAction, allTeams, 1);
 
     return {
       nextPlayerState: turnResult.player,

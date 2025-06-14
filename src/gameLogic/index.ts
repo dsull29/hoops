@@ -8,7 +8,7 @@ export {
   minorInjuryEvent,
 } from './eventDefinitions';
 
-export { advanceDay } from './gameLoop'; // FIX: Export advanceDay instead of processDay
+export { advanceDay, type AdvanceDayResult } from './gameLoop';
 
 export { generatePlayerGameStats } from './playerGameStats';
 
