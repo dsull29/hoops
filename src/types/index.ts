@@ -66,6 +66,44 @@ export interface SeasonSchedule {
   playoffEliminated: boolean;
 }
 
+export type PlayerTrait =
+  | "Coach's Son"
+  | 'Gym Rat'
+  | 'Floor Raiser'
+  | 'Rim Runner'
+  | 'Shot Blocker'
+  | 'Sniper'
+  // Scoring
+  | 'Microwave'
+  | 'Clutch Gene'
+  | 'And-One King'
+  | 'Post Scorer'
+  | 'Slasher'
+  // Playmaking
+  | 'Dimer'
+  | 'Pick & Roll Maestro'
+  | 'Lob City Passer'
+  | 'Steady Hand'
+  // Defense
+  | 'Perimeter Lockdown'
+  | 'Pick Pocket'
+  | 'Defensive Anchor'
+  | 'Rebound Chaser'
+  // Physical
+  | 'Iron Man'
+  | 'Second Wind'
+  | 'High Motor'
+  | 'Natural Athlete'
+  | 'Glass Cannon'
+  // Mental & Career
+  | 'Team Leader'
+  | 'Media Darling'
+  | 'Fan Favorite'
+  | 'Late Bloomer'
+  | 'Student of the Game'
+  | 'Enigmatic'
+  | 'Underrated';
+
 export interface Player {
   name: string;
   position: string;
@@ -73,12 +111,12 @@ export interface Player {
   gameMode: GameMode;
   currentRole: PlayerRole;
   stats: PlayerStats;
-  traits: string[];
+  traits: Map<PlayerTrait, number>;
   currentSeason: number;
   currentSeasonInMode: number;
   careerOver: boolean;
   careerLog: string[];
-  // --- UPDATED: Reverted to daily progression ---
+
   currentDayInSeason: number;
   totalDaysPlayed: number;
   schedule: SeasonSchedule;
