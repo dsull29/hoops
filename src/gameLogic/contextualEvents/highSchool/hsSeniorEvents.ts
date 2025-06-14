@@ -129,54 +129,54 @@ export const hsSeniorEvents: GameEvent[] = [
       },
     ],
   },
-  {
-    id: 'hs_senior_scholarship_offer',
-    title: 'A Scholarship Offer!',
-    description:
-      "A coach from a Division II school calls you personally. They're impressed with your tape and are offering you a partial scholarship.",
-    type: 'contextual',
-    choices: [
-      {
-        id: 'accept_D2_offer',
-        text: 'This is a dream come true!',
-        action: (p: Player) => {
-          if (p.traits.includes('College Bound (D-II)')) {
-            p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
-            return {
-              updatedPlayer: p,
-              outcomeMessage:
-                'Another school showing interest! It feels good to be wanted. Morale +5.',
-            };
-          }
-          p.stats.morale = clamp(p.stats.morale + 20, 0, MAX_MORALE);
-          p.traits.push('College Bound (D-II)');
-          return {
-            updatedPlayer: p,
-            outcomeMessage:
-              'You have a confirmed path to play college basketball! The weight off your shoulders is immense. Morale +20, Gained Trait: College Bound (D-II).',
-          };
-        },
-      },
-      {
-        id: 'wait_for_better',
-        text: 'Thank them, but hold out for a D-I offer.',
-        action: (p: Player) => {
-          const professionalismGain = Math.random() < 0.6 ? 1 : 2;
-          const moraleGain = Math.random() < 0.6 ? 5 : 3;
-          p.stats.professionalism = clamp(
-            p.stats.professionalism + professionalismGain,
-            MIN_STAT_VALUE,
-            MAX_STAT_VALUE
-          );
-          p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
-          return {
-            updatedPlayer: p,
-            outcomeMessage: `You bet on yourself. It’s a risky move, but you believe in your talent. Professionalism +${professionalismGain}, Morale +${moraleGain}.`,
-          };
-        },
-      },
-    ],
-  },
+  // {
+  //   id: 'hs_senior_scholarship_offer',
+  //   title: 'A Scholarship Offer!',
+  //   description:
+  //     "A coach from a Division II school calls you personally. They're impressed with your tape and are offering you a partial scholarship.",
+  //   type: 'contextual',
+  //   choices: [
+  //     {
+  //       id: 'accept_D2_offer',
+  //       text: 'This is a dream come true!',
+  //       action: (p: Player) => {
+  //         if (p.traits.has('College Bound (D-II)')) {
+  //           p.stats.morale = clamp(p.stats.morale + 5, 0, MAX_MORALE);
+  //           return {
+  //             updatedPlayer: p,
+  //             outcomeMessage:
+  //               'Another school showing interest! It feels good to be wanted. Morale +5.',
+  //           };
+  //         }
+  //         p.stats.morale = clamp(p.stats.morale + 20, 0, MAX_MORALE);
+  //         p.traits.set('College Bound (D-II)', 1);
+  //         return {
+  //           updatedPlayer: p,
+  //           outcomeMessage:
+  //             'You have a confirmed path to play college basketball! The weight off your shoulders is immense. Morale +20, Gained Trait: College Bound (D-II).',
+  //         };
+  //       },
+  //     },
+  //     {
+  //       id: 'wait_for_better',
+  //       text: 'Thank them, but hold out for a D-I offer.',
+  //       action: (p: Player) => {
+  //         const professionalismGain = Math.random() < 0.6 ? 1 : 2;
+  //         const moraleGain = Math.random() < 0.6 ? 5 : 3;
+  //         p.stats.professionalism = clamp(
+  //           p.stats.professionalism + professionalismGain,
+  //           MIN_STAT_VALUE,
+  //           MAX_STAT_VALUE
+  //         );
+  //         p.stats.morale = clamp(p.stats.morale + moraleGain, 0, MAX_MORALE);
+  //         return {
+  //           updatedPlayer: p,
+  //           outcomeMessage: `You bet on yourself. It’s a risky move, but you believe in your talent. Professionalism +${professionalismGain}, Morale +${moraleGain}.`,
+  //         };
+  //       },
+  //     },
+  //   ],
+  // },
   {
     id: 'hs_senior_yearbook',
     title: 'Yearbook Signing',

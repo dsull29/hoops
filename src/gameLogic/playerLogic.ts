@@ -1,18 +1,17 @@
 import { MAX_STAT_VALUE, MIN_STAT_VALUE } from '../constants';
-import type { Player } from '../types';
+import type { Player, PlayerTrait } from '../types';
 import { clamp, getRandomName, getRandomPosition } from '../utils/index';
 import { generateSeasonSchedule } from './seasonLogic';
+import { TRAIT_DEFINITIONS, TraitCategory } from './traits';
 
 export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
   const validMetaPoints =
     typeof metaSkillPoints === 'number' && !isNaN(metaSkillPoints) ? metaSkillPoints : 0;
 
-  // FIX: Drastically reduced the bonus from legacy points and added a cap.
-  const legacyBonus = Math.min(20, Math.floor(validMetaPoints / 15)); // Cap the bonus at +20
+  const legacyBonus = Math.min(20, Math.floor(validMetaPoints / 15));
   const baseStat = 35 + legacyBonus;
 
   const initialSchedule = generateSeasonSchedule('High School', 3);
-
   const careerLog = [
     'Your High School career begins as a Junior on the JV team. Time to make a name for yourself!',
   ];
@@ -22,42 +21,76 @@ export const createInitialPlayer = (metaSkillPoints: number = 0): Player => {
     );
   }
 
+  const stats = {
+    shooting: clamp(
+      baseStat + Math.floor(Math.random() * 15) - 7,
+      MIN_STAT_VALUE,
+      MAX_STAT_VALUE - 20
+    ),
+    athleticism: clamp(
+      baseStat + Math.floor(Math.random() * 20) - 10,
+      MIN_STAT_VALUE,
+      MAX_STAT_VALUE - 15
+    ),
+    basketballIQ: clamp(
+      baseStat + Math.floor(Math.random() * 15) - 7,
+      MIN_STAT_VALUE,
+      MAX_STAT_VALUE - 20
+    ),
+    charisma: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+    professionalism: clamp(20 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+    durability: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
+    morale: 75,
+    skillPoints: validMetaPoints,
+  };
+
+  const startingTraits = new Map<PlayerTrait, number>();
+
+  // --- FIX: Randomly assign traits and apply STAT_BOOST effects ---
+  const possibleTraits = Array.from(TRAIT_DEFINITIONS.values());
+  const traitRoll = Math.random();
+
+  if (traitRoll < 1.0) {
+    // 30% chance of getting a starting trait
+    let assigned = false;
+    while (!assigned) {
+      const randomTraitDef = possibleTraits[Math.floor(Math.random() * possibleTraits.length)];
+      if (randomTraitDef.category !== TraitCategory.CAREER_PROGRESSION) {
+        startingTraits.set(randomTraitDef.name, 1);
+        careerLog.push(
+          `--- You start your career with a natural gift: ${randomTraitDef.name}! ---`
+        );
+
+        // Apply STAT_BOOST effects immediately
+        const level1 = randomTraitDef.levels[0];
+        if (level1.effects.statBoost) {
+          const { stat, value } = level1.effects.statBoost;
+          stats[stat] = clamp(stats[stat] + value, MIN_STAT_VALUE, MAX_STAT_VALUE);
+          careerLog.push(
+            `--- Your "${randomTraitDef.name}" trait gives you +${value} ${stat}! ---`
+          );
+        }
+
+        assigned = true;
+      }
+    }
+  }
+
   return {
     name: getRandomName(),
     position: getRandomPosition(),
     age: 16,
     gameMode: 'High School',
     currentRole: 'Junior Varsity Player',
-    stats: {
-      shooting: clamp(
-        baseStat + Math.floor(Math.random() * 15) - 7,
-        MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 20
-      ),
-      athleticism: clamp(
-        baseStat + Math.floor(Math.random() * 20) - 10,
-        MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 15
-      ),
-      basketballIQ: clamp(
-        baseStat + Math.floor(Math.random() * 15) - 7,
-        MIN_STAT_VALUE,
-        MAX_STAT_VALUE - 20
-      ),
-      charisma: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      professionalism: clamp(20 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      durability: clamp(25 + Math.floor(Math.random() * 20), MIN_STAT_VALUE, MAX_STAT_VALUE),
-      morale: 75,
-      skillPoints: validMetaPoints,
-    },
-    traits: [],
+    stats,
+    traits: startingTraits,
     currentSeason: 3,
     currentSeasonInMode: 3,
     currentDayInSeason: 1,
     totalDaysPlayed: 0,
     schedule: initialSchedule,
     careerOver: false,
-    careerLog: careerLog,
+    careerLog,
   };
 };
 
